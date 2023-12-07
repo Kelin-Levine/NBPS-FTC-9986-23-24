@@ -330,28 +330,29 @@ public class MecanumTeleOpTesting extends LinearOpMode {
             telemetry.addData("Control mode:", controlMode);
             telemetry.addData("Limp motors?", isLimp);
             telemetry.addData("", "");
-            telemetry.addData("Left  claw current position:", leftClawServo.getPosition());
-            telemetry.addData("Right claw current position:", rightClawServo.getPosition());
+            telemetry.addData("Left  claw servo position:", leftClawServo.getPosition());
+            telemetry.addData("Right claw servo position:", rightClawServo.getPosition());
             telemetry.addData("", "");
-            telemetry.addData("Wrist current position:", armWristServo.getPosition());
-            telemetry.addData("Wrist relative position:", armWristServo.getPosition() + (1 - Constants.wristPositionUp));
+            telemetry.addData("Wrist scaled position:", Calculations.encoderToScaleArmWrist(armWristServo.getPosition()));
+            telemetry.addData("Wrist servo position:", armWristServo.getPosition());
             telemetry.addData("", "");
             telemetry.addData("Arm stendo power level:", (armStendoPower * 100.0) + "%");
-            telemetry.addData("Arm stendo current position:", armTravelMotor.getCurrentPosition());
-            telemetry.addData("Arm stendo relative position:", armTravelMotor.getCurrentPosition() / Constants.travelTicks1Inch);
+            telemetry.addData("Arm stendo scaled position:", Calculations.encoderToScaleArmTravel(armTravelMotor.getCurrentPosition()));
+            telemetry.addData("Arm stendo encoder position:", armTravelMotor.getCurrentPosition());
             telemetry.addData("Arm stendo motor power:", armTravelMotor.getPower());
             telemetry.addData("", "");
             telemetry.addData("Arm lift power level:", (armLiftPower * 100.0) + "%");
-            telemetry.addData("Arm lift current position:", armLiftMotor.getCurrentPosition());
-            telemetry.addData("Arm lift relative position:", (armLiftMotor.getCurrentPosition() + (Constants.liftTicks180Degrees - Constants.liftTicksNorth)) / Constants.liftTicks180Degrees);
-            telemetry.addData("Arm lift motor power:", armLiftMotor.getPower());
+            telemetry.addData("Arm lift scaled position:", Calculations.encoderToScaleArmLift(armLiftMotor.getCurrentPosition()));
+            telemetry.addData("Arm lift encoder position:", armLiftMotor.getCurrentPosition());
             if (controlMode == 3) {
                 telemetry.addData("Arm lift target position:", armLiftMotor.getTargetPosition());
+            } else {
+                telemetry.addData("Arm lift motor power:", armLiftMotor.getPower());
             }
             telemetry.addData("", "");
             telemetry.addData("Drive motor power level:", (motors.getPowerMultiplier() * 100.0) + "%");
-            telemetry.addData("Front left/right current position:", "%d, %d", leftFrontDrive.getCurrentPosition(), rightFrontDrive.getCurrentPosition());
-            telemetry.addData("Back  left/right current position:", "%d, %d", leftBackDrive.getCurrentPosition(), rightBackDrive.getCurrentPosition());
+            telemetry.addData("Front left/right encoder position:", "%d, %d", leftFrontDrive.getCurrentPosition(), rightFrontDrive.getCurrentPosition());
+            telemetry.addData("Back  left/right encoder position:", "%d, %d", leftBackDrive.getCurrentPosition(), rightBackDrive.getCurrentPosition());
             telemetry.addData("Front left/right motor power:", "%d%%, %d%%", Math.round(leftFrontDrive.getPower() * 100), Math.round(rightFrontDrive.getPower() * 100));
             telemetry.addData("Back  left/right motor power:", "%d%%, %d%%", Math.round(leftBackDrive.getPower() * 100), Math.round(rightBackDrive.getPower() * 100));
             telemetry.update();

@@ -27,12 +27,12 @@ public class ArmAssembly {
         // The angle for the lift to point at, on a scale of 0 (straight down) to 1 (straight up)
         // Avoid going below the motor's zero position
         // Remember that the lift motor's zero position will likely be above 0 on this scale
-        liftMotor.setTargetPosition(Math.max(0, (int) (position.getLiftAngle() * Constants.liftTicks180Degrees - (Constants.liftTicks180Degrees - Constants.liftTicksNorth))));
+        liftMotor.setTargetPosition(Math.max(0, Calculations.scaleToEncoderArmLift(position.getLiftAngle())));
         // The position for the stendo to travel to, on a scale of inches
         // Avoid going below the motor's zero position
-        travelMotor.setTargetPosition(Math.max(0, position.getTravelPosition() * Constants.travelTicks1Inch));
+        travelMotor.setTargetPosition(Math.max(0, Calculations.scaleToEncoderArmTravel(position.getTravelPosition())));
         // The angle for the wrist to point at, on a scale where 1 is up
-        wristServo.setPosition(position.getWristAngle() - (1 - Constants.wristPositionUp));
+        wristServo.setPosition(Calculations.scaleToEncoderArmWrist(position.getWristAngle()));
     }
 
     // Getter methods

@@ -10,6 +10,7 @@ package org.firstinspires.ftc.teamcode;
  */
 public class Calculations {
 
+    // Mecanum drive calculations
     public static QuadMotorValues mecanumDrive(double axial, double lateral, double yaw) {
         // Combine the direction requests for each axis-motion to determine each wheel's power.
         // Set up a variable for each drive wheel to save the power level for telemetry.
@@ -36,6 +37,7 @@ public class Calculations {
         return new QuadMotorValues(leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
     }
 
+    // Joystick to arm target angle calculations
     public static int vectorToArmPositionHalf(float vx, float vy) {
         // Have you taken pre-calc yet?
 
@@ -65,6 +67,32 @@ public class Calculations {
         angle -= Constants.liftTicks180Degrees - Constants.liftTicksNorth;
         // Cast angle to int and clamp within allowed range
         return Math.min(Math.max((int) angle, 0), Constants.liftPositionMaxOverride);
+    }
+
+    // Position scaling calculations
+    // The angle for the lift to point at, on a scale of 0 (straight down) to 1 (straight up)
+    // Remember that the lift motor's zero position will likely be above 0 on this scale
+    public static int scaleToEncoderArmLift(double scale) {
+        return (int) (scale * Constants.liftTicks180Degrees - (Constants.liftTicks180Degrees - Constants.liftTicksNorth));
+    }
+    public static double encoderToScaleArmLift(int encoder) {
+        return (double) (encoder + (Constants.liftTicks180Degrees - Constants.liftTicksNorth)) / Constants.liftTicks180Degrees;
+    }
+
+    // The position for the stendo to travel to, on a scale of inches
+    public static int scaleToEncoderArmTravel(double scale) {
+        return (int) (scale * Constants.travelTicks1Inch);
+    }
+    public static double encoderToScaleArmTravel(int encoder) {
+        return (double) encoder / Constants.travelTicks1Inch;
+    }
+
+    // The angle for the wrist to point at, on a scale where 1 is up
+    public static double scaleToEncoderArmWrist(double scale) {
+        return scale - (1 - Constants.wristPositionUp);
+    }
+    public static double encoderToScaleArmWrist(double encoder) {
+        return encoder + (1 - Constants.wristPositionUp);
     }
 
 }

@@ -62,12 +62,14 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Right bumper         |   Move to compact position
  * Left bumper + y button    |   Zero arm lift encoder
  * Left bumper + x button    |   Zero stendo encoder
+ * Start button         |   Toggle showing extra robot information on Driver Control Station
  *
  * Controller 2:
  * Left stick           |   Drive robot (strafe)
  * Right stick          |   Drive robot (rotate)
  * Left trigger down    |   Decrease driving speed
  * Right trigger down   |   Increase driving speed
+ * Start button         |   Toggle showing extra robot information on Driver Control Station
  *
  * Tips:
  * If you don't understand what a particular method does, then hover your mouse over it to get some info and a short description.
@@ -99,12 +101,14 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
     public void runOpMode() {
 
         boolean driveOnController1 = false;
+        boolean showExtraInfo = false;
 
         // Declare variables that persist between loops
         // The value of inputs at the last loop
         float lTLast = 0.0f;
         float rTLast = 0.0f;
-        boolean guideLast = false;
+        boolean guide1Last = false;
+        boolean startLast = false;
 
 
         // Initialize the motors/hardware. The names used here must correspond to the names set on the driver control station.
@@ -153,7 +157,8 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
             // This only matters for inputs that are recorded at the last loop
             float rTNow = driveOnController1 ? gamepad1.right_trigger : gamepad2.right_trigger;
             float lTNow = driveOnController1 ? gamepad1.left_trigger : gamepad2.left_trigger;
-            boolean guideNow = gamepad1.guide;
+            boolean guide1Now = gamepad1.guide;
+            boolean startNow = gamepad1.start || gamepad2.start;
 
             // Button inputs
             if (gamepad1.left_bumper) {
@@ -161,9 +166,6 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
                 // Zero the arm lift motor
                 if (gamepad1.y) {
                     zeroRunToPositionMotor(armAssembly.getLiftMotor(), Constants.armLiftPower);
-                    /*armLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                    armLiftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    armLiftMotor.setPower(0);*/
                 }
 
                 // Zero the arm stendo motor
@@ -207,8 +209,13 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
                 }
 
                 // Toggle control setup mode
-                if (guideNow && !guideLast) {
+                if (guide1Now && !guide1Last) {
                     driveOnController1 = !driveOnController1;
+                }
+
+                // Toggle extra robot information
+                if (startNow && !startLast) {
+                    showExtraInfo = !showExtraInfo;
                 }
             }
 
@@ -230,23 +237,39 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
 
 
             // Add info to be shown on the driver control station
+            // This is finished now.
             telemetry.addData("Status", "Run Time: " + runtime);
             telemetry.addData("", "");
-            //telemetry.addData("Arm current position:", armLiftPosition);
-            //telemetry.addData("Arm target position:", armLiftMotor.getTargetPosition());
-            //telemetry.addData("Arm input target:", armInputTarget);
-            //telemetry.addData("", "");
-            //telemetry.addData("Wrist current position:", armWristServo.get());
-            //telemetry.addData("", "");
-            telemetry.addData("Overall motor power", (motors.getPowerMultiplier() * 100.0) + "%");
-            telemetry.addData("Front left/Right", "%d%%, %d%%", Math.round(drivePower.getLeftFrontValue() * 100), Math.round(drivePower.getRightFrontValue() * 100));
-            telemetry.addData("Back  left/Right", "%d%%, %d%%", Math.round(drivePower.getLeftBackValue() * 100), Math.round(drivePower.getRightBackValue() * 100));
+            if (showExtraInfo) {
+                telemetry.addData("Left  claw servo position:", leftClawServo.getPosition());
+                telemetry.addData("Right claw servo position:", rightClawServo.getPosition());
+                telemetry.addData("", "");
+                telemetry.addData("Wrist scaled position:", Calculations.encoderToScaleArmWrist(armWristServo.getPosition()));
+                telemetry.addData("Wrist servo position:", armWristServo.getPosition());
+                telemetry.addData("", "");
+                telemetry.addData("Arm stendo scaled position:", Calculations.encoderToScaleArmTravel(armTravelMotor.getCurrentPosition()));
+                telemetry.addData("Arm stendo encoder position:", armTravelMotor.getCurrentPosition());
+                telemetry.addData("Arm lift target position:", armLiftMotor.getTargetPosition());
+                telemetry.addData("", "");
+                telemetry.addData("Arm lift scaled position:", Calculations.encoderToScaleArmLift(armLiftMotor.getCurrentPosition()));
+                telemetry.addData("Arm lift encoder position:", armLiftMotor.getCurrentPosition());
+                telemetry.addData("Arm lift target position:", armLiftMotor.getTargetPosition());
+                telemetry.addData("", "");
+                telemetry.addData("Drive motor power level:", (motors.getPowerMultiplier() * 100.0) + "%");
+                telemetry.addData("Front left/right encoder position:", "%d, %d", leftFrontDrive.getCurrentPosition(), rightFrontDrive.getCurrentPosition());
+                telemetry.addData("Back  left/right encoder position:", "%d, %d", leftBackDrive.getCurrentPosition(), rightBackDrive.getCurrentPosition());
+                telemetry.addData("Front left/right motor power:", "%d%%, %d%%", Math.round(leftFrontDrive.getPower() * 100), Math.round(rightFrontDrive.getPower() * 100));
+                telemetry.addData("Back  left/right motor power:", "%d%%, %d%%", Math.round(leftBackDrive.getPower() * 100), Math.round(rightBackDrive.getPower() * 100));
+            } else {
+                telemetry.addData("Robot info hidden for performance.", "Press start to toggle.");
+            }
             telemetry.update();
 
             // Update previous inputs
             rTLast = rTNow;
             lTLast = lTNow;
-            guideLast = guideNow;
+            guide1Last = guide1Now;
+            startLast = startNow;
         }
     }
 

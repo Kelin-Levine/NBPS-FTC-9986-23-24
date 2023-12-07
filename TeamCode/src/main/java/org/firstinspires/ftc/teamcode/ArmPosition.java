@@ -14,11 +14,11 @@ public class ArmPosition {
 
     // Private instance variables
     private final double liftAngle; // The angle for the lift to point at, on a scale of 0 (straight down) to 1 (straight up)
-    private final int travelPosition; // The position for the stendo to travel to, on a scale of inches
+    private final double travelPosition; // The position for the stendo to travel to, on a scale of inches
     private final double wristAngle; // The angle for the wrist to point at, on a scale where 1 is up
 
     // Constructor method
-    public ArmPosition(double liftAngle, int travelPosition, double wristAngle) {
+    public ArmPosition(double liftAngle, double travelPosition, double wristAngle) {
         this.liftAngle = liftAngle;
         this.travelPosition = travelPosition;
         this.wristAngle = wristAngle;
@@ -29,7 +29,7 @@ public class ArmPosition {
         return liftAngle;
     }
 
-    public int getTravelPosition() {
+    public double getTravelPosition() {
         return travelPosition;
     }
 

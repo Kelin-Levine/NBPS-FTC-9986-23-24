@@ -134,7 +134,7 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
         leftClawServo.setDirection(Servo.Direction.REVERSE);
         rightClawServo.setDirection(Servo.Direction.FORWARD);
 
-        armWristServo.setDirection(Servo.Direction.FORWARD);
+        armWristServo.setDirection(Servo.Direction.REVERSE);
 
         armTravelMotor.setDirection(DcMotor.Direction.FORWARD);
         zeroRunToPositionMotor(armTravelMotor, Constants.armTravelPower);
@@ -177,16 +177,20 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
                 // Do button inputs here so that they are ignored if both bumpers are pressed
                 // Switch between place positions
                 if (gamepad1.y) {
-                    armAssembly.applyPosition(cycleSetPosition(ArmPositionMode.PLACE, placePositions, 1));
+                    ArmPosition position = cycleSetPosition(ArmPositionMode.PLACE, placePositions, 1);
+                    armAssembly.applyPosition(position);
                 } else if (gamepad1.a) {
-                    armAssembly.applyPosition(cycleSetPosition(ArmPositionMode.PLACE, placePositions, -1));
+                    ArmPosition position = cycleSetPosition(ArmPositionMode.PLACE, placePositions, -1);
+                    armAssembly.applyPosition(position);
                 }
 
                 // Switch between collection positions
                 if (gamepad1.dpad_up) {
-                    armAssembly.applyPosition(cycleSetPosition(ArmPositionMode.COLLECT, collectionPositions, 1));
+                    ArmPosition position = cycleSetPosition(ArmPositionMode.COLLECT, collectionPositions, 1);
+                    armAssembly.applyPosition(position);
                 } else if (gamepad1.dpad_down) {
-                    armAssembly.applyPosition(cycleSetPosition(ArmPositionMode.COLLECT, collectionPositions, -1));
+                    ArmPosition position = cycleSetPosition(ArmPositionMode.COLLECT, collectionPositions, -1);
+                    armAssembly.applyPosition(position);
                 }
 
                 // Apply compact position
@@ -198,14 +202,14 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
 
                 // Claws
                 if (gamepad1.dpad_left) {
-                    leftClawServo.setPosition(1);
+                    leftClawServo.setPosition(Constants.leftClawOpen);
                 } else if (gamepad1.x) {
-                    leftClawServo.setPosition(0);
+                    leftClawServo.setPosition(Constants.leftClawClosed);
                 }
                 if (gamepad1.dpad_right) {
-                    rightClawServo.setPosition(1);
+                    rightClawServo.setPosition(Constants.rightClawOpen);
                 } else if (gamepad1.b) {
-                    rightClawServo.setPosition(0);
+                    rightClawServo.setPosition(Constants.rightClawClosed);
                 }
 
                 // Toggle control setup mode

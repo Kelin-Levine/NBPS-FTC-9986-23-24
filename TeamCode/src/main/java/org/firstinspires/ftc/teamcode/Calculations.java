@@ -89,10 +89,10 @@ public class Calculations {
 
     // The angle for the wrist to point at, on a scale where 1 is up
     public static double scaleToEncoderArmWrist(double scale) {
-        return scale - (1 - Constants.wristPositionUp);
+        return scale - (1 - Constants.wristPositionTop);
     }
     public static double encoderToScaleArmWrist(double encoder) {
-        return encoder + (1 - Constants.wristPositionUp);
+        return encoder + (1 - Constants.wristPositionTop);
     }
 
 }

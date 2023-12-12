@@ -20,8 +20,15 @@ public class Constants {
     public static final int armColorScale = 1000; // The number of encoder ticks over which the arm will light up stronger as it gets farther from its target
 
     // Component configuration
-    public static final double wristPositionUp = 9.5; // The servo position for the wrist to point up
-    public static final int travelTicks1Inch = 25436 / 4; // The number of encoder ticks for the arm stendo to travel 1 inch
+    public static final double leftClawClosed = 1.0; // The position of the left claw when it's fully closed
+    public static final double leftClawOpen = 0.0; // The position of the left claw when it's fully open
+    public static final double rightClawClosed = 1.0; // The position of the right claw when it's fully closed
+    public static final double rightClawOpen = 0.0; // The position of the right claw when it's fully open
+
+    public static final double wristPositionTop = 1759542.23414; // The servo position for the wrist when it's all the way back (this is not at all correct)
+
+    public static final int travelTicks1Inch = 32; // The number of encoder ticks for the arm stendo to travel 1 inch
+
     public static final int liftTicks180Degrees = 2200 * 2; // The number of encoder ticks for the arm lift to travel 180 degrees
     public static final int liftTicksNorth = 3300; // The number of arm lift encoder ticks at the north (straight up) position
     public static final int liftPositionMax = 3000; // The safe maximum number of arm lift encoder ticks for the arm to swing between

@@ -147,7 +147,7 @@ public class MecanumTeleOpTesting extends LinearOpMode {
         leftClawServo.setDirection(Servo.Direction.REVERSE);
         rightClawServo.setDirection(Servo.Direction.FORWARD);
 
-        armWristServo.setDirection(Servo.Direction.FORWARD);
+        armWristServo.setDirection(Servo.Direction.REVERSE);
 
         armTravelMotor.setDirection(DcMotor.Direction.FORWARD);
 
@@ -320,12 +320,6 @@ public class MecanumTeleOpTesting extends LinearOpMode {
 
             // Add info to be shown on the driver control station
             telemetry.addData("Status", "Run Time: " + runtime);
-            telemetry.addData("", "");
-            telemetry.addData("Control mode 0:", "control style 1 (full control), triggers change drive power");
-            telemetry.addData("Control mode 1:", "control style 1 (full control), triggers change stendo power");
-            telemetry.addData("Control mode 2:", "control style 1 (full control), triggers change lift power");
-            telemetry.addData("Control mode 3:", "control style 2 (specific arm and motors), triggers change lift power");
-            telemetry.addData("Control mode 4:", "control style 3 (zeroing motors), triggers change lift power");
             telemetry.addData("", "");
             telemetry.addData("Control mode:", controlMode);
             telemetry.addData("Limp motors?", isLimp);

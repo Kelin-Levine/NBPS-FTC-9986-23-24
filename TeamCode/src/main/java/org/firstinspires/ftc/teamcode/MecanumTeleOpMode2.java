@@ -29,11 +29,15 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 /*
  * This file contains the NBPS 2023-24 FTC Team 9986's Driver "OpMode".
@@ -41,9 +45,11 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * The OpMode to use can be selected on the FTC Driver Station.
  *
  * This code applies joystick controls for the claws and four motors on the ground and preset
- * positions for the arm's angle (lift), extension (travel), and wrist.
+ * positions for the arm's angle (lift), extension (travel), and wrist. The driving is field-centric,
+ * unless toggled off.
  *
- * Before starting this OpMode, the arm lift must be in its lowest position and the extension fully retracted.
+ * Before starting this OpMode, the arm lift must be in its lowest position and the extension fully
+ * retracted. The robot should also be facing forward, or else the field-centric driving will be off until reset.
  *
  * This class works like a main class.
  *
@@ -55,21 +61,28 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * D-pad down           |   Switch to bottom collection position/decrement collection position
  * D-pad left           |   Close left claw
  * D-pad right          |   Close right claw
- * North (Y/Δ) button   |   Switch to bottom place position/increment place position
- * South (A/X) button   |   Switch to bottom place position/decrement place position
+ * North (Y/Δ) button   |   Switch to bottom place position/increment place position (also sets drive to slow speed)
+ * South (A/X) button   |   Switch to bottom place position/decrement place position (also sets drive to slow speed)
  * West (X/□) button    |   Open left claw
  * East (B/○) button    |   Open right claw
  * Right bumper         |   Move to compact position
  * Left bumper + y button    |   Zero arm lift encoder
  * Left bumper + x button    |   Zero stendo encoder
- * Start button         |   Toggle showing extra robot information on Driver Control Station
+ * Left stick up/down   |   Raise/lower arm lift manually *DOES NOT WORK
+ * Right stick up/down  |   Extend/retract arm wrist manually *DOES NOT WORK
+ * Select button        |   Engage/toggle hang positions
+ * Start button         |   Toggle showing extra robot information on the Driver Station
  *
  * Controller 2:
  * Left stick           |   Drive robot (strafe)
  * Right stick          |   Drive robot (rotate)
- * Left trigger down    |   Decrease driving speed
- * Right trigger down   |   Increase driving speed
- * Start button         |   Toggle showing extra robot information on Driver Control Station
+ * Left bumper          |   Set to slow drive speed
+ * Right bumper         |   Set to fast drive speed
+ * Left trigger down    |   Decrease drive speed
+ * Right trigger down   |   Increase drive speed
+ * North (Y/Δ) button   |   Zero robot heading
+ * Guide button         |   Toggle field-centric driving
+ * Start button         |   Toggle showing extra robot information on the Driver Station
  *
  * Tips:
  * If you don't understand what a particular method does, then hover your mouse over it to get some info and a short description.
@@ -79,17 +92,36 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @TeleOp(name="Gary Mecanum TeleOp Mode 2", group="Linear OpMode")
 public class MecanumTeleOpMode2 extends LinearOpMode {
 
+    // Enums to label the different position modes that the arm can be in
+    public enum ArmPositionMode {
+        COMPACT,
+        COLLECT,
+        PLACE,
+        HANG,
+        MANUAL,
+    }
+
+
     // Variables
     // The timer
     private final ElapsedTime runtime = new ElapsedTime();
 
     // Pre-programmed positions
-    private final ArmPosition compactPosition = null;//new ArmPosition();
+    private final ArmPosition compactPosition = new ArmPosition(0.18, 0, 1);
     private final ArmPosition[] collectionPositions = {
-            //new ArmPosition(),
+            new ArmPosition(0.18, 0, 0.72),
+            new ArmPosition(0.231, 0, 0.72),
+            //new ArmPosition(0.18, 0.75, 0.655),
+            //new ArmPosition(0.231, 0.75, 0.65),
     };
     private final ArmPosition[] placePositions = {
-            //new ArmPosition(),
+            new ArmPosition(0.5, 0, 0.8),
+            new ArmPosition(0.534, 0, 0.79),
+            new ArmPosition(0.6, 0, 0.78),
+    };
+    private final ArmPosition[] hangPositions = {
+            new ArmPosition(0.9, 0, 0.4),
+            new ArmPosition(1.95, 0, 0.4),
     };
 
     // The set positions that the robot is currently at
@@ -100,15 +132,22 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        boolean driveOnController1 = false;
-        boolean showExtraInfo = false;
+        boolean isShowingExtraInfo = false;
+        boolean isFieldCentric = true;
 
         // Declare variables that persist between loops
         // The value of inputs at the last loop
-        float lTLast = 0.0f;
-        float rTLast = 0.0f;
-        boolean guide1Last = false;
-        boolean startLast = false;
+        boolean aButton1Last = false;
+        boolean xButton1Last = false;
+        boolean yButton1Last = false;
+        boolean dPadUp1Last = false;
+        boolean dPadDown1Last = false;
+        boolean selectButton1Last = false;
+        float leftTrigger2Last = 0.0f;
+        float rightTrigger2Last = 0.0f;
+        boolean yButton2Last = false;
+        boolean guideButton2Last = false;
+        boolean startButtonLast = false;
 
 
         // Initialize the motors/hardware. The names used here must correspond to the names set on the driver control station.
@@ -124,71 +163,110 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
         DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_travel_motor");
         Servo armWristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
 
-        // Configure motors
+        // Configure hardware
+        // Drive motors
         leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
         rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        QuadMotorArray motors = new QuadMotorArray(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, Constants.drivePowerMultiplier);
 
+        leftFrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftBackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        leftFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        QuadDcMotorArray motors = new QuadDcMotorArray(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, Constants.DRIVE_POWER_MULTIPLIER);
+
+        // Claw servos
         leftClawServo.setDirection(Servo.Direction.REVERSE);
         rightClawServo.setDirection(Servo.Direction.FORWARD);
 
+        // Arm assembly
         armWristServo.setDirection(Servo.Direction.REVERSE);
 
         armTravelMotor.setDirection(DcMotor.Direction.FORWARD);
-        zeroRunToPositionMotor(armTravelMotor, Constants.armTravelPower);
+        armTravelMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        zeroRunToPositionMotor(armTravelMotor, Constants.ARM_TRAVEL_POWER);
 
         armLiftMotor.setDirection((DcMotor.Direction.FORWARD));
-        zeroRunToPositionMotor(armLiftMotor, Constants.armLiftPower);
+        armLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        zeroRunToPositionMotor(armLiftMotor, Constants.ARM_LIFT_POWER);
 
         ArmAssembly armAssembly = new ArmAssembly(armLiftMotor, armTravelMotor, armWristServo);
+
+        // Retrieve the IMU from the hardware map
+        IMU imu = hardwareMap.get(IMU.class, "imu");
+        // Adjust the orientation parameters to match your robot
+        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.RIGHT));
+        // Without this, the REV Hub's orientation is assumed to be logo up / USB forward
+        imu.initialize(parameters);
 
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
         waitForStart();
+        if (isStopRequested()) return;
+
         runtime.reset();
+
+        // Initialize arm for play
+        armPositionMode = ArmPositionMode.COMPACT;
+        armPositionInSet = 0;
+        armAssembly.applyPosition(compactPosition);
 
         // Run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             // Get current value of inputs now so they can't change during the loop
             // This only matters for inputs that are recorded at the last loop
-            float rTNow = driveOnController1 ? gamepad1.right_trigger : gamepad2.right_trigger;
-            float lTNow = driveOnController1 ? gamepad1.left_trigger : gamepad2.left_trigger;
-            boolean guide1Now = gamepad1.guide;
-            boolean startNow = gamepad1.start || gamepad2.start;
+            boolean aButton1Now = gamepad1.a;
+            boolean xButton1Now = gamepad1.x;
+            boolean yButton1Now = gamepad1.y;
+            boolean dPadUp1Now = gamepad1.dpad_up;
+            boolean dPadDown1Now = gamepad1.dpad_down;
+            boolean selectButton1Now = gamepad1.share;
+            float rightTrigger2Now = gamepad2.right_trigger;
+            float leftTrigger2Now = gamepad2.left_trigger;
+            boolean yButton2Now = gamepad2.y;
+            boolean guideButton2Now = gamepad2.guide;
+            boolean startButtonNow = gamepad1.start || gamepad2.start;
 
             // Button inputs
             if (gamepad1.left_bumper) {
                 // Do zeros here so that they go over normal button inputs
                 // Zero the arm lift motor
-                if (gamepad1.y) {
-                    zeroRunToPositionMotor(armAssembly.getLiftMotor(), Constants.armLiftPower);
+                if (yButton1Now && !yButton1Last) {
+                    zeroRunToPositionMotor(armAssembly.getLiftMotor(), Constants.ARM_LIFT_POWER);
                 }
 
                 // Zero the arm stendo motor
-                if (gamepad1.x) {
-                    zeroRunToPositionMotor(armAssembly.getTravelMotor(), Constants.armTravelPower);
+                if (xButton1Now && !xButton1Last) {
+                    zeroRunToPositionMotor(armAssembly.getTravelMotor(), Constants.ARM_TRAVEL_POWER);
                 }
 
             } else {
                 // Do button inputs here so that they are ignored if both bumpers are pressed
                 // Switch between place positions
-                if (gamepad1.y) {
+                if (yButton1Now && !yButton1Last) {
                     ArmPosition position = cycleSetPosition(ArmPositionMode.PLACE, placePositions, 1);
                     armAssembly.applyPosition(position);
-                } else if (gamepad1.a) {
+                } else if (aButton1Now && !aButton1Last) {
                     ArmPosition position = cycleSetPosition(ArmPositionMode.PLACE, placePositions, -1);
                     armAssembly.applyPosition(position);
                 }
 
                 // Switch between collection positions
-                if (gamepad1.dpad_up) {
+                if (dPadUp1Now && !dPadUp1Last) {
                     ArmPosition position = cycleSetPosition(ArmPositionMode.COLLECT, collectionPositions, 1);
                     armAssembly.applyPosition(position);
-                } else if (gamepad1.dpad_down) {
+                } else if (dPadDown1Now && !dPadDown1Last) {
                     ArmPosition position = cycleSetPosition(ArmPositionMode.COLLECT, collectionPositions, -1);
                     armAssembly.applyPosition(position);
                 }
@@ -200,62 +278,116 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
                     armAssembly.applyPosition(compactPosition);
                 }
 
-                // Claws
-                if (gamepad1.dpad_left) {
-                    leftClawServo.setPosition(Constants.leftClawOpen);
-                } else if (gamepad1.x) {
-                    leftClawServo.setPosition(Constants.leftClawClosed);
-                }
-                if (gamepad1.dpad_right) {
-                    rightClawServo.setPosition(Constants.rightClawOpen);
-                } else if (gamepad1.b) {
-                    rightClawServo.setPosition(Constants.rightClawClosed);
+                // Do hang positions
+                if (selectButton1Now && !selectButton1Last) {
+                    // always start at first hang position, do not increment unless already at a hang position
+                    ArmPosition position = cycleSetPosition(ArmPositionMode.HANG, hangPositions, armPositionMode == ArmPositionMode.HANG ? 1 : 0);
+                    armAssembly.applyPosition(position);
                 }
 
-                // Toggle control setup mode
-                if (guide1Now && !guide1Last) {
-                    driveOnController1 = !driveOnController1;
+                // Claws
+                if (gamepad1.dpad_left) {
+                    leftClawServo.setPosition(Constants.LEFT_CLAW_CLOSED);
+                } else if (gamepad1.x) {
+                    leftClawServo.setPosition(Constants.LEFT_CLAW_OPEN);
+                }
+                if (gamepad1.dpad_right) {
+                    rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
+                } else if (gamepad1.b) {
+                    rightClawServo.setPosition(Constants.RIGHT_CLAW_OPEN);
+                }
+
+                // Set to slow drive speed
+                if (gamepad2.left_bumper || (yButton1Now && !yButton1Last) || (aButton1Now && !aButton1Last)) {
+                    motors.setPowerMultiplier(0.4);
+                }
+
+                // Set to fast drive speed
+                if (gamepad2.right_bumper) {
+                    motors.setPowerMultiplier(0.9);
+                }
+
+                // Toggle field-centric
+                if (guideButton2Now && !guideButton2Last) {
+                    isFieldCentric = !isFieldCentric;
+                }
+
+                // Zero heading
+                if (yButton2Now && !yButton2Last) {
+                    imu.resetYaw();
                 }
 
                 // Toggle extra robot information
-                if (startNow && !startLast) {
-                    showExtraInfo = !showExtraInfo;
+                if (startButtonNow && !startButtonLast) {
+                    isShowingExtraInfo = !isShowingExtraInfo;
                 }
             }
 
 
-            // Shift the motor power up/down by how much the triggers have been pushed down since the last loop
+            // Offset the wrist's reference position up/down by how much the triggers have been pushed down since the last loop
             // Math.max() picks the greater of two numbers, so negative movements of the trigger (trigger is pulled in) will become 0.0
-            // This way, the motor power will only be affected as the triggers are pressed down and not when they are released
-            float upShift = Math.max(0.0f, rTNow - rTLast) * 0.05f;
-            float downShift = Math.max(0.0f, lTNow - lTLast) * 0.05f;
+            // This way, the wrist will only be affected as the triggers are pressed down and not when they are released
+            float upShift = Math.max(0.0f, rightTrigger2Now - rightTrigger2Last) * 0.1f;
+            float downShift = Math.max(0.0f, leftTrigger2Now - leftTrigger2Last) * 0.1f;
             motors.setPowerMultiplier(Math.max(Math.min(motors.getPowerMultiplier() + upShift - downShift, 1), 0));
 
-            // Run motors
-            float axial = driveOnController1 ? -gamepad1.left_stick_y : -gamepad2.left_stick_y;
-            float lateral = driveOnController1 ? gamepad1.left_stick_x : gamepad2.left_stick_x;
-            float yaw = driveOnController1 ? gamepad1.right_stick_x : gamepad2.right_stick_x;
+            /*double upShift = Math.max(0.0f, leftTrigger2Now - leftTrigger2Last) * 0.1;
+            double downShift = Math.max(0.0f, rightTrigger2Now - rightTrigger2Last) * 0.1;
+            Constants.WRIST_POSITION_TOP = Math.max(Math.min(Constants.WRIST_POSITION_TOP + upShift - downShift, 1), 0);
+            armAssembly.applyWristPosition(armAssembly.getWristTargetPositionScaled()); // Refresh wrist position to use new reference position*/
 
-            QuadMotorValues drivePower = Calculations.mecanumDrive(axial, lateral, yaw);
+            // Run motors
+            float axial = -gamepad2.left_stick_y;
+            float lateral = gamepad2.left_stick_x;
+            float yaw = gamepad2.right_stick_x;
+            double heading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+
+            QuadMotorValues<Double> drivePower;
+            if (isFieldCentric) {
+                drivePower = Calculations.mecanumDriveisFieldCentric(axial, lateral, yaw, heading);
+            } else {
+                drivePower = Calculations.mecanumDriveRobotCentric(axial, lateral, yaw);
+            }
             motors.setPower(drivePower);
+
+            // Manual control of arm lift and wrist (this is a redundancy so it's ok that it's a little messy)
+            /*if (gamepad1.left_stick_y > 0.2) {
+                armPositionMode = ArmPositionMode.MANUAL;
+                armPositionInSet = 0;
+                armAssembly.applyLiftPosition(Calculations.encoderToScaleArmLift(armLiftMotor.getCurrentPosition()) + (gamepad1.left_stick_y + (gamepad1.left_stick_y > 0 ? -0.25 : 0.25)));
+            }
+            // Wrist
+            if (gamepad1.right_stick_y > 0.2) {
+                armPositionMode = ArmPositionMode.MANUAL;
+                armPositionInSet = 0;
+                armAssembly.applyWristPosition(Calculations.encoderToScaleArmWrist(armWristServo.getPosition()) + (gamepad1.right_stick_y + (gamepad1.right_stick_y > 0 ? -0.25 : 0.25)));
+            }*/
 
 
             // Add info to be shown on the driver control station
-            // This is finished now.
             telemetry.addData("Status", "Run Time: " + runtime);
             telemetry.addData("", "");
-            if (showExtraInfo) {
+            telemetry.addData("Arm mode:", armPositionMode);
+            telemetry.addData("", "");
+            telemetry.addData("Field-centric driving:", isFieldCentric);
+            telemetry.addData("Heading direction (degrees):", (heading / Math.PI * 180));
+            telemetry.addData("", "");
+            if (isShowingExtraInfo) {
+                // This is the only part that could be sped up with bulk reads. Seeing as it's not
+                // essential, bulk reads would only introduce additional overhead compared to a switch like this.
+                telemetry.addData("Additional info:", "");
+                telemetry.addData("", "");
                 telemetry.addData("Left  claw servo position:", leftClawServo.getPosition());
                 telemetry.addData("Right claw servo position:", rightClawServo.getPosition());
                 telemetry.addData("", "");
-                telemetry.addData("Wrist scaled position:", Calculations.encoderToScaleArmWrist(armWristServo.getPosition()));
+                telemetry.addData("Wrist scaled position:", armAssembly.getWristTargetPositionScaled());
                 telemetry.addData("Wrist servo position:", armWristServo.getPosition());
                 telemetry.addData("", "");
-                telemetry.addData("Arm stendo scaled position:", Calculations.encoderToScaleArmTravel(armTravelMotor.getCurrentPosition()));
+                telemetry.addData("Arm stendo scaled position:", armAssembly.getTravelTargetPositionScaled());
                 telemetry.addData("Arm stendo encoder position:", armTravelMotor.getCurrentPosition());
                 telemetry.addData("Arm lift target position:", armLiftMotor.getTargetPosition());
                 telemetry.addData("", "");
-                telemetry.addData("Arm lift scaled position:", Calculations.encoderToScaleArmLift(armLiftMotor.getCurrentPosition()));
+                telemetry.addData("Arm lift scaled position:", armAssembly.getLiftTargetPositionScaled());
                 telemetry.addData("Arm lift encoder position:", armLiftMotor.getCurrentPosition());
                 telemetry.addData("Arm lift target position:", armLiftMotor.getTargetPosition());
                 telemetry.addData("", "");
@@ -265,15 +397,26 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
                 telemetry.addData("Front left/right motor power:", "%d%%, %d%%", Math.round(leftFrontDrive.getPower() * 100), Math.round(rightFrontDrive.getPower() * 100));
                 telemetry.addData("Back  left/right motor power:", "%d%%, %d%%", Math.round(leftBackDrive.getPower() * 100), Math.round(rightBackDrive.getPower() * 100));
             } else {
+                telemetry.addData("Field-centric driving:", isFieldCentric);
+                telemetry.addData("Heading direction (degrees):", (heading / Math.PI * 180));
+                telemetry.addData("Drive motor power level:", (motors.getPowerMultiplier() * 100.0) + "%");
+                telemetry.addData("", "");
                 telemetry.addData("Robot info hidden for performance.", "Press start to toggle.");
             }
             telemetry.update();
 
             // Update previous inputs
-            rTLast = rTNow;
-            lTLast = lTNow;
-            guide1Last = guide1Now;
-            startLast = startNow;
+            aButton1Last = aButton1Now;
+            xButton1Last = xButton1Now;
+            yButton1Last = yButton1Now;
+            dPadUp1Last = dPadUp1Now;
+            dPadDown1Last = dPadDown1Now;
+            selectButton1Last = selectButton1Now;
+            rightTrigger2Last = rightTrigger2Now;
+            leftTrigger2Last = leftTrigger2Now;
+            yButton2Last = yButton2Now;
+            guideButton2Last = guideButton2Now;
+            startButtonLast = startButtonNow;
         }
     }
 
@@ -286,12 +429,11 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
     }
 
     private ArmPosition cycleSetPosition(ArmPositionMode mode, ArmPosition[] positions, int increment) {
-        if (armPositionMode == mode) {
-            armPositionInSet = Math.max(Math.min(armPositionInSet + increment, positions.length-1), 0);
-        } else {
+        if (armPositionMode != mode) {
             armPositionMode = mode;
             armPositionInSet = 0;
         }
+        armPositionInSet = Math.max(Math.min(armPositionInSet + increment, positions.length-1), 0);
         return positions[armPositionInSet];
     }
 }

@@ -29,6 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -75,6 +76,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Above every variable and method, it will say how many times its used. Click on that for a list of exactly where its used.
  */
 
+@Disabled
 @TeleOp(name="Gary Mecanum TeleOp Mode 1", group="Linear OpMode")
 public class MecanumTeleOpMode1 extends LinearOpMode {
 
@@ -114,7 +116,7 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
         leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
         rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        QuadMotorArray motors = new QuadMotorArray(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, Constants.drivePowerMultiplier);
+        QuadDcMotorArray motors = new QuadDcMotorArray(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, Constants.DRIVE_POWER_MULTIPLIER);
 
         leftIntakeServo.setDirection(CRServo.Direction.REVERSE);
         rightIntakeServo.setDirection(CRServo.Direction.FORWARD);
@@ -127,7 +129,7 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
         armLiftMotor.setDirection((DcMotor.Direction.FORWARD));
         // zero, then power, then position, then mode
         armLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        armLiftMotor.setPower(Constants.armLiftPower);
+        armLiftMotor.setPower(Constants.ARM_LIFT_POWER);
         armLiftMotor.setTargetPosition(0);
         armLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
@@ -153,7 +155,7 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
                 // Zero the arm motor
                 if (gamepad1.y) {
                     armLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    armLiftMotor.setPower(Constants.armLiftPower);
+                    armLiftMotor.setPower(Constants.ARM_LIFT_POWER);
                     armLiftMotor.setTargetPosition(0);
                     armLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     /*armLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -164,9 +166,9 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
                 // Do button inputs here so that they are ignored if both bumpers are pressed
                 // Arm travel motor
                 if (gamepad1.x) {
-                    armTravelMotor.setPower(Constants.armTravelPower);
+                    armTravelMotor.setPower(Constants.ARM_TRAVEL_POWER);
                 } else if (gamepad1.a) {
-                    armTravelMotor.setPower(-Constants.armTravelPower);
+                    armTravelMotor.setPower(-Constants.ARM_TRAVEL_POWER);
                 } else {
                     armTravelMotor.setPower(0);
                 }
@@ -223,11 +225,11 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
             float lateral = oneDriverMode ? gamepad1.left_stick_x : gamepad2.left_stick_x;
             float yaw = oneDriverMode ? gamepad1.right_stick_x : gamepad2.right_stick_x;
 
-            QuadMotorValues drivePower;
+            QuadMotorValues<Double> drivePower;
             if (!oneDriverMode || !gamepad1.right_bumper) {
-                drivePower = Calculations.mecanumDrive(axial, lateral, yaw);
+                drivePower = Calculations.mecanumDriveRobotCentric(axial, lateral, yaw);
             } else {
-                drivePower = Calculations.mecanumDrive(axial, lateral, 0.0);
+                drivePower = Calculations.mecanumDriveRobotCentric(axial, lateral, 0.0);
             }
             motors.setPower(drivePower);
 
@@ -236,7 +238,7 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
             if (oneDriverMode) {
                 // Single controller (use right stick only if right bumper is held)
                 double rightStickMagnitude = Math.hypot(gamepad1.right_stick_x, gamepad1.right_stick_y);
-                if (gamepad1.right_bumper && rightStickMagnitude > Constants.armControlStickThreshold) {
+                if (gamepad1.right_bumper && rightStickMagnitude > Constants.ARM_CONTROL_STICK_THRESHOLD) {
                     // have you taken pre-calc yet?
                     //armInputTarget = Math.min(Math.max((int) (Math.atan2(Math.abs(gamepad1.right_stick_x), gamepad1.right_stick_y) / Math.PI * 3400), 0), 3400);
                     if (gamepad1.right_stick_button) {
@@ -252,10 +254,10 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
                 // Two controllers (use right stick for half range, left for full)
                 double rightStickMagnitude = Math.hypot(gamepad1.right_stick_x, gamepad1.right_stick_y);
                 double leftStickMagnitude = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
-                if (rightStickMagnitude > Constants.armControlStickThreshold) {
+                if (rightStickMagnitude > Constants.ARM_CONTROL_STICK_THRESHOLD) {
                     armInputTarget = Calculations.vectorToArmPositionHalf(gamepad1.right_stick_x, gamepad1.right_stick_y);
                     armLiftMotor.setTargetPosition(armInputTarget);
-                } else if (leftStickMagnitude > Constants.armControlStickThreshold) {
+                } else if (leftStickMagnitude > Constants.ARM_CONTROL_STICK_THRESHOLD) {
                     armInputTarget = Calculations.vectorToArmPositionFull(gamepad1.left_stick_x, gamepad1.left_stick_y);
                     armLiftMotor.setTargetPosition(armInputTarget);
                 }
@@ -263,7 +265,7 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
 
             // Light up controller with distance of arm from target position
             int armLiftPosition = armLiftMotor.getCurrentPosition();
-            double colorStrength = Math.min(Math.max(Math.abs(armInputTarget - armLiftPosition) - Constants.armColorDeadZone, 0) / Constants.armColorScale, 1);
+            double colorStrength = Math.min(Math.max(Math.abs(armInputTarget - armLiftPosition) - Constants.ARM_COLOR_DEAD_ZONE, 0) / Constants.ARM_COLOR_SCALE, 1);
             gamepad1.setLedColor(0, 1-colorStrength, 0, 100);
 
 

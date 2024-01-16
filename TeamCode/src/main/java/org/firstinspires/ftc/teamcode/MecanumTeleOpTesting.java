@@ -29,11 +29,14 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 /*
  * This file contains the NBPS 2023-24 FTC Team 9986's Driver "OpMode".
@@ -115,8 +118,8 @@ public class MecanumTeleOpTesting extends LinearOpMode {
         boolean isLimp = false;
         int controlMode = 0;
         // Power levels
-        double armStendoPower = Constants.armTravelPower;
-        double armLiftPower = Constants.armLiftPower;
+        double armStendoPower = Constants.ARM_TRAVEL_POWER;
+        double armLiftPower = Constants.ARM_LIFT_POWER;
         // The value of inputs at the last loop
         float lTLast = 0.0f;
         float rTLast = 0.0f;
@@ -125,6 +128,11 @@ public class MecanumTeleOpTesting extends LinearOpMode {
 
 
         // Initialize the motors/hardware. The names used here must correspond to the names set on the driver control station.
+        ModernRoboticsI2cRangeSensor frontRangeSensor;
+        if (Constants.USE_RANGE_SENSOR) {
+            frontRangeSensor = hardwareMap.get(ModernRoboticsI2cRangeSensor.class, "front_range_sensor");
+        }
+
         DcMotor leftFrontDrive = hardwareMap.get(DcMotor.class, "left_front_drive");
         DcMotor leftBackDrive = hardwareMap.get(DcMotor.class, "left_back_drive");
         DcMotor rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
@@ -142,7 +150,18 @@ public class MecanumTeleOpTesting extends LinearOpMode {
         leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
         rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        QuadMotorArray motors = new QuadMotorArray(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, Constants.drivePowerMultiplier);
+
+        leftFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        leftFrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftBackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        QuadDcMotorArray motors = new QuadDcMotorArray(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, Constants.DRIVE_POWER_MULTIPLIER);
 
         leftClawServo.setDirection(Servo.Direction.REVERSE);
         rightClawServo.setDirection(Servo.Direction.FORWARD);
@@ -150,14 +169,20 @@ public class MecanumTeleOpTesting extends LinearOpMode {
         armWristServo.setDirection(Servo.Direction.REVERSE);
 
         armTravelMotor.setDirection(DcMotor.Direction.FORWARD);
+        armTravelMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        armTravelMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         armLiftMotor.setDirection((DcMotor.Direction.FORWARD));
+        armLiftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        armLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
         waitForStart();
+        if (isStopRequested()) return;
+
         runtime.reset();
 
         // Run until the end of the match (driver presses STOP)
@@ -203,15 +228,23 @@ public class MecanumTeleOpTesting extends LinearOpMode {
                 // Control style 2 (arm target angle and individual motors)
                 if (gamepad1.a) {
                     leftBackDrive.setPower(1);
+                } else {
+                    leftBackDrive.setPower(0);
                 }
                 if (gamepad1.b) {
                     rightBackDrive.setPower(1);
+                } else {
+                    rightBackDrive.setPower(0);
                 }
                 if (gamepad1.x) {
                     leftFrontDrive.setPower(1);
+                } else {
+                    leftFrontDrive.setPower(0);
                 }
                 if (gamepad1.y) {
                     rightFrontDrive.setPower(1);
+                } else {
+                    rightFrontDrive.setPower(0);
                 }
             } else {
                 // Control style 1 (full control)
@@ -233,20 +266,20 @@ public class MecanumTeleOpTesting extends LinearOpMode {
                 }
                 // Arm wrist
                 if (gamepad1.dpad_up) {
-                    armWristServo.setPosition(armWristServo.getPosition() + 0.001);
+                    armWristServo.setPosition(armWristServo.getPosition() + 0.005);
                 } else if (gamepad1.dpad_down) {
-                    armWristServo.setPosition(armWristServo.getPosition() - 0.001);
+                    armWristServo.setPosition(armWristServo.getPosition() - 0.005);
                 }
                 // Claws
                 if (gamepad1.dpad_left) {
-                    leftClawServo.setPosition(leftClawServo.getPosition() + 0.001);
+                    leftClawServo.setPosition(leftClawServo.getPosition() + 0.005);
                 } else if (gamepad1.x) {
-                    leftClawServo.setPosition(leftClawServo.getPosition() - 0.001);
+                    leftClawServo.setPosition(leftClawServo.getPosition() - 0.005);
                 }
                 if (gamepad1.dpad_right) {
-                    rightClawServo.setPosition(rightClawServo.getPosition() + 0.001);
+                    rightClawServo.setPosition(rightClawServo.getPosition() + 0.005);
                 } else if (gamepad1.b) {
-                    rightClawServo.setPosition(rightClawServo.getPosition() - 0.001);
+                    rightClawServo.setPosition(rightClawServo.getPosition() - 0.005);
                 }
             }
 
@@ -304,16 +337,16 @@ public class MecanumTeleOpTesting extends LinearOpMode {
                 // Control sticks control arm
                 double rightStickMagnitude = Math.hypot(gamepad1.right_stick_x, gamepad1.right_stick_y);
                 double leftStickMagnitude = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
-                if (rightStickMagnitude > Constants.armControlStickThreshold) {
+                if (rightStickMagnitude > Constants.ARM_CONTROL_STICK_THRESHOLD) {
                     armInputTarget = Calculations.vectorToArmPositionHalf(gamepad1.right_stick_x, gamepad1.right_stick_y);
                     armLiftMotor.setTargetPosition(armInputTarget);
-                } else if (leftStickMagnitude > Constants.armControlStickThreshold) {
+                } else if (leftStickMagnitude > Constants.ARM_CONTROL_STICK_THRESHOLD) {
                     armInputTarget = Calculations.vectorToArmPositionFull(gamepad1.left_stick_x, gamepad1.left_stick_y);
                     armLiftMotor.setTargetPosition(armInputTarget);
                 }
             } else if (controlMode < 3) {
                 // Control sticks control drive
-                drivePower = Calculations.mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+                drivePower = Calculations.mecanumDriveRobotCentric(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
                 motors.setPower(drivePower);
             }
 
@@ -345,10 +378,20 @@ public class MecanumTeleOpTesting extends LinearOpMode {
             }
             telemetry.addData("", "");
             telemetry.addData("Drive motor power level:", (motors.getPowerMultiplier() * 100.0) + "%");
+            telemetry.addData("Front left/right position in inches:", "%.2f, %.2f", Calculations.encoderToInchesDrive(leftFrontDrive.getCurrentPosition()), Calculations.encoderToInchesDrive(rightFrontDrive.getCurrentPosition()));
+            telemetry.addData("Back  left/right position in inches:", "%.2f, %.2f", Calculations.encoderToInchesDrive(leftBackDrive.getCurrentPosition()), Calculations.encoderToInchesDrive(rightBackDrive.getCurrentPosition()));
             telemetry.addData("Front left/right encoder position:", "%d, %d", leftFrontDrive.getCurrentPosition(), rightFrontDrive.getCurrentPosition());
             telemetry.addData("Back  left/right encoder position:", "%d, %d", leftBackDrive.getCurrentPosition(), rightBackDrive.getCurrentPosition());
             telemetry.addData("Front left/right motor power:", "%d%%, %d%%", Math.round(leftFrontDrive.getPower() * 100), Math.round(rightFrontDrive.getPower() * 100));
             telemetry.addData("Back  left/right motor power:", "%d%%, %d%%", Math.round(leftBackDrive.getPower() * 100), Math.round(rightBackDrive.getPower() * 100));
+            if (Constants.USE_RANGE_SENSOR) {
+                telemetry.addData("", "");
+                telemetry.addData("Range sensor distance (raw, ultrasonic):", frontRangeSensor.rawUltrasonic());
+                telemetry.addData("Range sensor distance (raw, optical):", frontRangeSensor.rawOptical());
+                telemetry.addData("Range sensor distance (cm, optical):", "%.2f cm", frontRangeSensor.cmOptical());
+                telemetry.addData("Range sensor distance (cm):", "%.2f cm", frontRangeSensor.getDistance(DistanceUnit.CM));
+                telemetry.addData("Range sensor distance (in):", "%.2f in", frontRangeSensor.getDistance(DistanceUnit.INCH));
+            }
             telemetry.update();
 
             // Update previous inputs

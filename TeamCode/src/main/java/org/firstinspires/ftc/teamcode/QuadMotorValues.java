@@ -3,17 +3,17 @@ package org.firstinspires.ftc.teamcode;
 /*
  * This is a data class for a set of motor power values. It records an amount of power for four driving motors.
  */
-public class QuadMotorValues {
+public class QuadMotorValues<T> {
 
     // Private instance variables
-    private double leftFrontValue;
-    private double rightFrontValue;
-    private double leftBackValue;
-    private double rightBackValue;
+    private T leftFrontValue;
+    private T rightFrontValue;
+    private T leftBackValue;
+    private T rightBackValue;
 
 
     // Constructor method
-    public QuadMotorValues(double leftFrontValue, double rightFrontValue, double leftBackValue, double rightBackValue) {
+    public QuadMotorValues(T leftFrontValue, T rightFrontValue, T leftBackValue, T rightBackValue) {
         this.leftFrontValue = leftFrontValue;
         this.rightFrontValue = rightFrontValue;
         this.leftBackValue = leftBackValue;
@@ -21,36 +21,36 @@ public class QuadMotorValues {
     }
 
     // Getter methods
-    public double getLeftFrontValue() {
+    public T getLeftFrontValue() {
         return leftFrontValue;
     }
 
-    public double getRightFrontValue() {
+    public T getRightFrontValue() {
         return rightFrontValue;
     }
 
-    public double getLeftBackValue() {
+    public T getLeftBackValue() {
         return leftBackValue;
     }
 
-    public double getRightBackValue() {
+    public T getRightBackValue() {
         return rightBackValue;
     }
 
     // Setter methods
-    public void setLeftFrontValue(double leftFrontValue) {
+    public void setLeftFrontValue(T leftFrontValue) {
         this.leftFrontValue = leftFrontValue;
     }
 
-    public void setRightFrontValue(double rightFrontValue) {
+    public void setRightFrontValue(T rightFrontValue) {
         this.rightFrontValue = rightFrontValue;
     }
 
-    public void setLeftBackValue(double leftBackValue) {
+    public void setLeftBackValue(T leftBackValue) {
         this.leftBackValue = leftBackValue;
     }
 
-    public void setRightBackValue(double rightBackValue) {
+    public void setRightBackValue(T rightBackValue) {
         this.rightBackValue = rightBackValue;
     }
 }

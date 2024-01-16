@@ -15,24 +15,47 @@ public class ArmAssembly {
     private final DcMotor travelMotor;
     private final Servo wristServo;
 
+    private double liftTargetPositionScaled;
+    private double travelTargetPositionScaled;
+    private double wristTargetPositionScaled;
+
     // Constructor method
     public ArmAssembly(DcMotor liftMotor, DcMotor travelMotor, Servo wristServo) {
         this.liftMotor = liftMotor;
         this.travelMotor = travelMotor;
         this.wristServo = wristServo;
+
+        this.liftTargetPositionScaled = Calculations.encoderToScaleArmLift(liftMotor.getCurrentPosition());
+        this.travelTargetPositionScaled = Calculations.encoderToScaleArmTravel(travelMotor.getCurrentPosition());
+        this.wristTargetPositionScaled = Calculations.encoderToScaleArmWrist(wristServo.getPosition());
     }
 
     // Methods
     public void applyPosition(ArmPosition position) {
+        applyLiftPosition(position.getLiftAngle());
+        applyTravelPosition(position.getTravelPosition());
+        applyWristPosition(position.getWristAngle());
+    }
+
+    public void applyLiftPosition(double scaled) {
         // The angle for the lift to point at, on a scale of 0 (straight down) to 1 (straight up)
         // Avoid going below the motor's zero position
         // Remember that the lift motor's zero position will likely be above 0 on this scale
-        liftMotor.setTargetPosition(Math.max(0, Calculations.scaleToEncoderArmLift(position.getLiftAngle())));
+        liftTargetPositionScaled = scaled;
+        liftMotor.setTargetPosition(Math.max(0, Calculations.scaleToEncoderArmLift(scaled)));
+    }
+
+    public void applyTravelPosition(double scaled) {
         // The position for the stendo to travel to, on a scale of inches
         // Avoid going below the motor's zero position
-        travelMotor.setTargetPosition(Math.max(0, Calculations.scaleToEncoderArmTravel(position.getTravelPosition())));
+        travelTargetPositionScaled = scaled;
+        travelMotor.setTargetPosition(Math.max(0, Calculations.scaleToEncoderArmTravel(scaled)));
+    }
+
+    public void applyWristPosition(double scaled) {
         // The angle for the wrist to point at, on a scale where 1 is up
-        wristServo.setPosition(Calculations.scaleToEncoderArmWrist(position.getWristAngle()));
+        wristTargetPositionScaled = scaled;
+        wristServo.setPosition(Calculations.scaleToEncoderArmWrist(scaled));
     }
 
     // Getter methods
@@ -46,5 +69,17 @@ public class ArmAssembly {
 
     public Servo getWristServo() {
         return wristServo;
+    }
+
+    public double getLiftTargetPositionScaled() {
+        return liftTargetPositionScaled;
+    }
+
+    public double getTravelTargetPositionScaled() {
+        return travelTargetPositionScaled;
+    }
+
+    public double getWristTargetPositionScaled() {
+        return wristTargetPositionScaled;
     }
 }

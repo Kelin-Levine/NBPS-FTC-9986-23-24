@@ -200,7 +200,7 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
         ArmAssembly armAssembly = new ArmAssembly(armLiftMotor, armTravelMotor, armWristServo);
 
         // Retrieve the IMU from the hardware map
-        IMU imu = hardwareMap.get(IMU.class, "imu");
+        IMU imu = hardwareMap.get(IMU.class, "imu1");
         // Adjust the orientation parameters to match your robot
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.UP,

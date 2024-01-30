@@ -594,7 +594,7 @@ public class MecanumAutoMode2Routine {
 
             case CENTER:
                 // Scoring at the center of the backdrop
-                sidewaysPlaceOffset = !isUsingOppositeClaw ? -6 : 6;
+                sidewaysPlaceOffset = !isUsingOppositeClaw ? 0 : 0;
                 break;
 
             case RIGHT:

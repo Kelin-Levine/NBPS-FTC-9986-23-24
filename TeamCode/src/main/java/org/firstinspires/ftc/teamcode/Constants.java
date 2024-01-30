@@ -83,7 +83,7 @@ public class Constants {
     public static final int   VISION_REGION1_SUBREGION_COUNT     = 3;   // The number of subregions to look for the right spike marker
     public static final int   VISION_REGION2_SUBREGION_COUNT     = 5;   // The number of subregions to look for the middle spike marker
     public static final int   VISION_SUBREGION_DISTANCE = 10;  // The distance between each subregion
-    public static final int   VISION_CHROMA_THRESHOLD   = 160; // The minimum chroma value for one of two chroma values to be likely to have a spike marker
+    public static final int   VISION_CHROMA_THRESHOLD   = 150; // The minimum chroma value for one of two chroma values to be likely to have a spike marker
     public static final int   VISION_APRILTAG_CHECKS    = 3;   // The number of times that all AprilTags must be seen in a row for the robot to proceed from the long distance
     public static final double VISION_APRILTAG_TIMEOUT  = 8;   // How much time can be remaining in the auto routine before waiting for AprilTags to not be blocked at long distance times out
 

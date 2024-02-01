@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -8,6 +12,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.openftc.apriltag.AprilTagDetection;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
@@ -100,7 +105,8 @@ public class MecanumAutoMode3 extends LinearOpMode {
     private OpenCvCamera frontCamera;
     private Servo leftClawServo;
     private Servo rightClawServo;
-    private QuadDcMotorArray motors;
+    //private QuadDcMotorArray motors;
+    private SampleMecanumDrive mDrive;
     private ArmAssembly armAssembly;
 
 
@@ -110,10 +116,10 @@ public class MecanumAutoMode3 extends LinearOpMode {
         WebcamName frontWebcam = hardwareMap.get(WebcamName.class, "front_webcam");
         int frontCameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
 
-        DcMotor leftFrontDrive = hardwareMap.get(DcMotor.class, "left_front_drive");
+        /*DcMotor leftFrontDrive = hardwareMap.get(DcMotor.class, "left_front_drive");
         DcMotor leftBackDrive = hardwareMap.get(DcMotor.class, "left_back_drive");
         DcMotor rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
-        DcMotor rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
+        DcMotor rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");*/
 
         leftClawServo = hardwareMap.get(Servo.class, "left_claw_servo");
         rightClawServo = hardwareMap.get(Servo.class, "right_claw_servo");
@@ -147,7 +153,7 @@ public class MecanumAutoMode3 extends LinearOpMode {
         });
 
         // Drive motors
-        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        /*leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
         rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -165,7 +171,8 @@ public class MecanumAutoMode3 extends LinearOpMode {
 
         motors = new QuadDcMotorArray(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, Constants.AUTO_DRIVE_POWER_MULTIPLIER);
 
-        motors.zeroMotorsRunToPosition();
+        motors.zeroMotorsRunToPosition();*/
+        mDrive = new SampleMecanumDrive(hardwareMap);
 
         // Claw servos
         leftClawServo.setDirection(Servo.Direction.REVERSE);
@@ -248,8 +255,10 @@ public class MecanumAutoMode3 extends LinearOpMode {
     // Method to run the normal autonomous routine (50 auto pts. + 3 starting teleop pts.)
     /*
      * Default setup: the purple pixel should be preloaded in the left claw and the yellow
-     * pixel should be preloaded in the right claw. This can be flipped.
-     * If you mess this up, the 50 point auto will turn into an 8-10 point auto. Ouch.
+     * pixel should be preloaded in the right claw. This can be swapped.
+     * If you mess this up, the 50 point auto will turn into a 10 point auto. Ouch.
+     *
+     * Reminder: angles in RoadRunnner are measured in counter-clockwise radians.
      */
     public void runRoutine(boolean isBlueSide, boolean isLongDistance, boolean isDoingAlternateRoute, boolean isFlippedClaws, SidePosition parkSide) {
         // START
@@ -269,7 +278,7 @@ public class MecanumAutoMode3 extends LinearOpMode {
          * At this point, the robot is still at the starting position.
          */
         routinePlaceAtSpikeMarker(isFlippedClaws);
-        turnCW90(isBlueSide ? -1 : 1);
+        mDrive.turn((Math.PI / 2) * (isBlueSide ? 1 : -1));
 
         // APPROACH BACKDROP
         /*
@@ -437,30 +446,37 @@ public class MecanumAutoMode3 extends LinearOpMode {
     }
 
     private void routinePlaceAtSpikeMarker(boolean isUsingOppositeClaw) {
-        driveForward(20);
+        TrajectoryBuilder traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .splineToSplineHeading(new Pose2d(offsetOfCurrentPosition(20, 0), 0), 0);
+
+        Pose2d startingPose = mDrive.getPoseEstimate();
 
         switch (spikeMarkerPosition) {
             case CENTER:
                 // Spike marker is at center position
-                turnCW90(0.19 * (!isUsingOppositeClaw ? 1 : -1));
-                driveForward(4.5);
+                mDrive.followTrajectory(traj1
+                        .splineToSplineHeading(new Pose2d(offsetOfCurrentPosition(4.3, 1.33 * (!isUsingOppositeClaw ? -1 : 1)), 0.3 * (!isUsingOppositeClaw ? -1 : 1)), 0)
+                        .build());
+
                 placeSpikePixel(isUsingOppositeClaw);
-                driveForward(-4.5);
-                turnCW90(-0.19 * (!isUsingOppositeClaw ? 1 : -1));
                 break;
 
             case LEFT:
                 // Spike marker is at left position
-                turnCW90(-0.6);
+                mDrive.followTrajectory(traj1
+                        .splineToSplineHeading(new Pose2d(offsetOfCurrentPosition(0, 0), 0.6), 0)
+                        .build());
+
                 placeSpikePixel(isUsingOppositeClaw);
-                turnCW90(0.6);
                 break;
 
             case RIGHT:
                 // Spike marker is at right position
-                turnCW90(0.6);
+                mDrive.followTrajectory(traj1
+                        .splineToSplineHeading(new Pose2d(offsetOfCurrentPosition(0, 0), -0.6), 0)
+                        .build());
+
                 placeSpikePixel(isUsingOppositeClaw);
-                turnCW90(-0.6);
                 break;
         }
 
@@ -470,7 +486,13 @@ public class MecanumAutoMode3 extends LinearOpMode {
          * in from the back, so therefore the robot itself needs to be at 7.875 inches out to be
          * centered on the first tile.
          */
-        driveForward(-14.125); // 20 - 14.125 = 5.875
+        //driveForward(-14.125); // 20 - 14.125 = 5.875
+        Trajectory traj2 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .splineToSplineHeading(new Pose2d(startingPose.getX(), startingPose.getY(), 0), 0)
+                .splineToSplineHeading(new Pose2d(offsetOfCurrentPosition(-14.125, 0), 0), 0)
+                .build();
+        mDrive.followTrajectory(traj2);
+        // TODO: maybe replace this with a specific position to improve accuracy?
     }
 
     private void routineGrabOnFieldPixel(boolean isBlueSide) {
@@ -498,33 +520,25 @@ public class MecanumAutoMode3 extends LinearOpMode {
     }
 
     private void routineApproachBackdrop(boolean isBlueSide, boolean isLongDistance, boolean isDoingAlternateRoute) {
-        if (isBlueSide) {
-            // Go around the spike marker tile (blue side)
-            driveForward(23.5 * (isLongDistance && !isDoingAlternateRoute ? 3 : 1));
-            //driveSideways(22);
-            turnCW90(1);
-            driveForward(20 * (isLongDistance && isDoingAlternateRoute ? 2 : 1));
-            turnCW90(-1);
-            if (isLongDistance && isDoingAlternateRoute) {
-                driveForward(23.5 * 2);
-                turnCW90(-1);
-                driveForward(22);
-                turnCW90(1);
-            }
-        } else {
-            // Go around the spike marker tile (red side)
-            driveForward(23.5 * (isLongDistance && !isDoingAlternateRoute ? 3 : 1));
-            //driveSideways(-22);
-            turnCW90(-1);
-            driveForward(20 * (isLongDistance && isDoingAlternateRoute ? 2 : 1));
-            turnCW90(1);
-            if (isLongDistance && isDoingAlternateRoute) {
-                driveForward(23.5 * 2);
-                turnCW90(1);
-                driveForward(22);
-                turnCW90(-1);
-            }
+        // "Premature optimization is the root of all evil" -someone who shouldn't have been ignored
+        TrajectoryBuilder traj = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .splineToSplineHeading(offsetOfCurrentPose(0, (23.5 * (isLongDistance && !isDoingAlternateRoute ? 3 : 1)) * (isBlueSide ? 1 : -1), 0), 0)
+                .splineToSplineHeading(offsetOfCurrentPose(23.5 * (isLongDistance && isDoingAlternateRoute ? 2 : 1), 0, 0), 0);
+
+        if (isLongDistance && isDoingAlternateRoute) {
+            // Go around the spike marker tile
+            traj
+                    .splineToSplineHeading(offsetOfCurrentPose(0, 23.5 * 2 * (isBlueSide ? 1 : -1), 0), 0)
+                    .splineToSplineHeading(offsetOfCurrentPose(-23.5, 0, 0), 0);
         }
+
+        // Make sure it's still pointing the right directory
+        traj
+                .splineToSplineHeading(offsetOfCurrentPose(0, 0, Math.PI / 2 * (isBlueSide ? 1 : -1)), 0);
+
+        // Finally, follow the trajectory
+        mDrive.followTrajectory(traj.build());
+
         armAssembly.applyPosition(backdropPlacePosition);
     }
 
@@ -642,7 +656,11 @@ public class MecanumAutoMode3 extends LinearOpMode {
                 sidewaysPlaceOffset = !isUsingOppositeClaw ? 4 : 10.5;
                 break;
         }
-        driveSideways(sidewaysPlaceOffset);
+
+        TrajectoryBuilder traj = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .splineToSplineHeading(offsetOfCurrentPose(-sidewaysPlaceOffset, 0, 0), 0);
+        mDrive.followTrajectory(traj.build());
+
         placeBackdropPixel(isUsingOppositeClaw, !isUsingOppositeClaw);
         return sidewaysPlaceOffset;
     }
@@ -733,25 +751,28 @@ public class MecanumAutoMode3 extends LinearOpMode {
     }
 
     // Method to drive forward a specific number of inches
+    // This no longer does anything, but is still declared to keep old code from erroring
     private void driveForward(double inches) {
-        motors.setTargetPosition(Calculations.inchesToEncoderDrive(inches));
+        /*motors.setTargetPosition(Calculations.inchesToEncoderDrive(inches));
         sleepWhileDriveBusy();
-        motors.zeroMotorsRunToPosition();
+        motors.zeroMotorsRunToPosition();*/
     }
 
     // Method to drive sideways a specific number of inches (to the right)
     // This is not recommended to be used often because it can cause the robot to drift.
+    // This no longer does anything, but is still declared to keep old code from erroring
     private void driveSideways(double inches) {
-        motors.setTargetPosition(Calculations.inchesStrafeToEncodersDrive(inches));
+        /*motors.setTargetPosition(Calculations.inchesStrafeToEncodersDrive(inches));
         sleepWhileDriveBusy();
-        motors.zeroMotorsRunToPosition();
+        motors.zeroMotorsRunToPosition();*/
     }
 
     // Method to turn the robot clockwise in increments of 90 degrees
+    // This no longer does anything, but is still declared to keep old code from erroring
     private void turnCW90(double count) {
-        motors.setTargetPosition(Calculations.clockwise90TurnsToEncodersDrive(count));
+        /*motors.setTargetPosition(Calculations.clockwise90TurnsToEncodersDrive(count));
         sleepWhileDriveBusy();
-        motors.zeroMotorsRunToPosition();
+        motors.zeroMotorsRunToPosition();*/
     }
 
     // Method to place a pixel on a spike line
@@ -770,6 +791,24 @@ public class MecanumAutoMode3 extends LinearOpMode {
             rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
         }
         armAssembly.applyPosition(compactPosition);
+    }
+
+    // Method to generate a pose by offsetting from the current pose
+    private Pose2d offsetOfCurrentPose(double dx, double dy, double dh) {
+        Pose2d estimate = mDrive.getPoseEstimate();
+        return new Pose2d(estimate.getX() + dx, estimate.getY() + dy, estimate.getHeading() + dh);
+    }
+
+    // Method to generate a position by offsetting from the current position
+    private Vector2d offsetOfCurrentPosition(double dx, double dy) {
+        Pose2d estimate = mDrive.getPoseEstimate();
+        return new Vector2d(estimate.getX() + dx, estimate.getY() + dy);
+    }
+
+    // Method to generate a heading by offsetting from the current heading
+    private double offsetOfCurrentHeading(double dh) {
+        Pose2d estimate = mDrive.getPoseEstimate();
+        return estimate.getHeading() + dh;
     }
 
     // Method to approach and place a pixel on the backdrop
@@ -805,8 +844,9 @@ public class MecanumAutoMode3 extends LinearOpMode {
     }
 
     // Method to sleep until drive motors are done working
+    // This no longer does anything, but is still declared to keep old code from erroringA
     private void sleepWhileDriveBusy() {
-        while (motors.isMotorsBusyFast()) sleep(20);
-        sleep(200);
+        /*while (motors.isMotorsBusyFast()) sleep(20);
+        sleep(200);*/
     }
 }

@@ -532,9 +532,9 @@ public class MecanumAutoMode3 extends LinearOpMode {
                     .splineToSplineHeading(offsetOfCurrentPose(-23.5, 0, 0), 0);
         }
 
-        // Make sure it's still pointing the right directory
+        // Make sure it's still pointing the right direction
         traj
-                .splineToSplineHeading(offsetOfCurrentPose(0, 0, Math.PI / 2 * (isBlueSide ? 1 : -1)), 0);
+                .splineToSplineHeading(new Pose2d(offsetOfCurrentPosition(0, 0), Math.PI / 2 * (isBlueSide ? 1 : -1)), 0);
 
         // Finally, follow the trajectory
         mDrive.followTrajectory(traj.build());
@@ -658,7 +658,7 @@ public class MecanumAutoMode3 extends LinearOpMode {
         }
 
         TrajectoryBuilder traj = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
-                .splineToSplineHeading(offsetOfCurrentPose(-sidewaysPlaceOffset, 0, 0), 0);
+                .strafeRight(sidewaysPlaceOffset);
         mDrive.followTrajectory(traj.build());
 
         placeBackdropPixel(isUsingOppositeClaw, !isUsingOppositeClaw);
@@ -732,20 +732,26 @@ public class MecanumAutoMode3 extends LinearOpMode {
 
     private void routinePark(boolean isBlueSide, SidePosition parkSide, double sidewaysPlaceOffset) {
         // Face away from the driver station so that the heading initializes correctly in teleop
-        if (isBlueSide) {
-            turnCW90(1);
-        } else {
-            turnCW90(-1);
-        }
+        Trajectory traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .splineToSplineHeading(new Pose2d(offsetOfCurrentPosition(0, 0), 0), 0)
+                .build();
+        mDrive.followTrajectory(traj1);
+
         switch (parkSide) {
             case LEFT:
                 // Parking at the left side of the backstage
-                driveForward((23.5 + sidewaysPlaceOffset) * (isBlueSide ? -1 : 1));
+                Trajectory traj2l = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                        .forward((23.5 + sidewaysPlaceOffset) * (isBlueSide ? -1 : 1))
+                        .build();
+                mDrive.followTrajectory(traj2l);
                 break;
 
             case RIGHT:
                 // Parking at the right side of the backstage
-                driveForward((23.5 - sidewaysPlaceOffset) * (isBlueSide ? 1 : -1));
+                Trajectory traj2r = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                        .forward((23.5 - sidewaysPlaceOffset) * (isBlueSide ? 1 : -1))
+                        .build();
+                mDrive.followTrajectory(traj2r);
                 break;
         }
     }
@@ -793,6 +799,38 @@ public class MecanumAutoMode3 extends LinearOpMode {
         armAssembly.applyPosition(compactPosition);
     }
 
+    // Method to approach and place a pixel on the backdrop
+    private void placeBackdropPixel(boolean isUsingLeftClaw, boolean isUsingRightClaw) {
+        placeBackdropPixel(isUsingLeftClaw, isUsingRightClaw, 14);
+    }
+    private void placeBackdropPixel(boolean isUsingLeftClaw, boolean isUsingRightClaw, double approachDistance) {
+        Trajectory traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .forward(approachDistance)
+                .build();
+        mDrive.followTrajectory(traj1);
+
+        if (isUsingRightClaw) {
+            rightClawServo.setPosition(Constants.RIGHT_CLAW_OPEN);
+        }
+        if (isUsingLeftClaw) {
+            leftClawServo.setPosition(Constants.LEFT_CLAW_OPEN);
+        }
+        sleep(100);
+
+        Trajectory traj2 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .back(3)
+                .build();
+        mDrive.followTrajectory(traj2);
+
+        if (isUsingRightClaw) {
+            rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
+        }
+        if (isUsingLeftClaw) {
+            leftClawServo.setPosition(Constants.LEFT_CLAW_CLOSED);
+        }
+        armAssembly.applyPosition(compactPosition);
+    }
+
     // Method to generate a pose by offsetting from the current pose
     private Pose2d offsetOfCurrentPose(double dx, double dy, double dh) {
         Pose2d estimate = mDrive.getPoseEstimate();
@@ -809,29 +847,6 @@ public class MecanumAutoMode3 extends LinearOpMode {
     private double offsetOfCurrentHeading(double dh) {
         Pose2d estimate = mDrive.getPoseEstimate();
         return estimate.getHeading() + dh;
-    }
-
-    // Method to approach and place a pixel on the backdrop
-    private void placeBackdropPixel(boolean isUsingLeftClaw, boolean isUsingRightClaw) {
-        placeBackdropPixel(isUsingLeftClaw, isUsingRightClaw, 14);
-    }
-    private void placeBackdropPixel(boolean isUsingLeftClaw, boolean isUsingRightClaw, double approachDistance) {
-        driveForward(approachDistance);
-        if (isUsingRightClaw) {
-            rightClawServo.setPosition(Constants.RIGHT_CLAW_OPEN);
-        }
-        if (isUsingLeftClaw) {
-            leftClawServo.setPosition(Constants.LEFT_CLAW_OPEN);
-        }
-        sleep(100);
-        driveForward(-3);
-        if (isUsingRightClaw) {
-            rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
-        }
-        if (isUsingLeftClaw) {
-            leftClawServo.setPosition(Constants.LEFT_CLAW_CLOSED);
-        }
-        armAssembly.applyPosition(compactPosition);
     }
 
     // Method to zero a RUN_TO_POSITION motor

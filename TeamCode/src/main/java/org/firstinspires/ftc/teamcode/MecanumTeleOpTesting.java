@@ -52,7 +52,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * This code starts by setting up the robot, then repeats in a loop until the robot is turned off.
  *
  * Robot controls:
- * All controls are on controller 1.
+ *
+ * Controller 2:
+ * North (Y/Δ) button   |   Open drone release
+ * South (A/X) button   |   Close drone release
+ *
+ * All other controls are on controller 1.
  * Start button         |   Toggle limp motors
  * Guide button         |   Cycle through control modes
      * mode 0 = control style 1, triggers change drive power
@@ -141,6 +146,8 @@ public class MecanumTeleOpTesting extends LinearOpMode {
         Servo leftClawServo = hardwareMap.get(Servo.class, "left_claw_servo");
         Servo rightClawServo = hardwareMap.get(Servo.class, "right_claw_servo");
 
+        Servo droneReleaseServo = hardwareMap.get(Servo.class, "drone_release_servo");
+
         DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_lift_motor");
         DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_travel_motor");
         Servo armWristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
@@ -165,6 +172,8 @@ public class MecanumTeleOpTesting extends LinearOpMode {
 
         leftClawServo.setDirection(Servo.Direction.REVERSE);
         rightClawServo.setDirection(Servo.Direction.FORWARD);
+
+        droneReleaseServo.setDirection(Servo.Direction.FORWARD);
 
         armWristServo.setDirection(Servo.Direction.REVERSE);
 
@@ -195,6 +204,12 @@ public class MecanumTeleOpTesting extends LinearOpMode {
             boolean guideNow = gamepad1.guide;
 
             // Inputs
+            if (gamepad2.y) {
+                droneReleaseServo.setPosition(droneReleaseServo.getPosition() + 0.005);
+            } else if (gamepad2.a) {
+                droneReleaseServo.setPosition(droneReleaseServo.getPosition() - 0.005);
+            }
+
             if (controlMode == 4) {
                 // Control style 3 (zeroing motors)
                 // Drive motors
@@ -359,6 +374,8 @@ public class MecanumTeleOpTesting extends LinearOpMode {
             telemetry.addData("", "");
             telemetry.addData("Left  claw servo position:", leftClawServo.getPosition());
             telemetry.addData("Right claw servo position:", rightClawServo.getPosition());
+            telemetry.addData("", "");
+            telemetry.addData("Drone release servo position:", droneReleaseServo.getPosition());
             telemetry.addData("", "");
             telemetry.addData("Wrist scaled position:", Calculations.encoderToScaleArmWrist(armWristServo.getPosition()));
             telemetry.addData("Wrist servo position:", armWristServo.getPosition());

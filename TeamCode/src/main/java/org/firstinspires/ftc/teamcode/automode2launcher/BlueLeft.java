@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.MecanumAutoMode2Launcher;
 
-@Disabled
 @Autonomous(name="Gary Mecanum Autonomous Mode 2 (Blue-Left)", group="Robot")
 public class BlueLeft extends MecanumAutoMode2Launcher {
     @Override

@@ -25,6 +25,9 @@ public class Constants {
     // Component configuration
     public static final boolean   USE_RANGE_SENSOR              = false; // Whether the autonomous portion should try to make use of a range sensor
 
+    public static final double    DRONE_RELEASE_CLOSED       = 0.875; // The position of the shooter when it's fully closed
+    public static final double    DRONE_RELEASE_OPEN         = 1.0; // The position of the shooter claw when it's fully open
+
     public static final double    LEFT_CLAW_CLOSED           = 0.70; // The position of the left claw when it's fully closed
     public static final double    LEFT_CLAW_OPEN             = 0.27; // The position of the left claw when it's fully open
     public static final double    RIGHT_CLAW_CLOSED          = 0.72; // The position of the right claw when it's fully closed

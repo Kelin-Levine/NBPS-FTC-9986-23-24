@@ -82,6 +82,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  * Right trigger down   |   Increase drive speed
  * North (Y/Δ) button   |   Zero robot heading
  * Guide button         |   Toggle field-centric driving
+ * Select button        |   Launch drone
  * Start button         |   Toggle showing extra robot information on the Driver Station
  *
  * Tips:
@@ -159,6 +160,8 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
         Servo leftClawServo = hardwareMap.get(Servo.class, "left_claw_servo");
         Servo rightClawServo = hardwareMap.get(Servo.class, "right_claw_servo");
 
+        Servo droneReleaseServo = hardwareMap.get(Servo.class, "drone_release_servo");
+
         DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_lift_motor");
         DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_travel_motor");
         Servo armWristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
@@ -186,6 +189,10 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
         leftClawServo.setDirection(Servo.Direction.REVERSE);
         rightClawServo.setDirection(Servo.Direction.FORWARD);
 
+        // Drone release servo
+        droneReleaseServo.setDirection(Servo.Direction.FORWARD);
+        droneReleaseServo.setPosition(Constants.DRONE_RELEASE_CLOSED);
+
         // Arm assembly
         armWristServo.setDirection(Servo.Direction.REVERSE);
 
@@ -198,6 +205,11 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
         zeroRunToPositionMotor(armLiftMotor, Constants.ARM_LIFT_POWER);
 
         ArmAssembly armAssembly = new ArmAssembly(armLiftMotor, armTravelMotor, armWristServo);
+
+        // Initialize arm for play
+        armPositionMode = ArmPositionMode.COMPACT;
+        armPositionInSet = 0;
+        armAssembly.applyPosition(compactPosition);
 
         // Retrieve the IMU from the hardware map
         IMU imu = hardwareMap.get(IMU.class, "imu1");
@@ -216,11 +228,6 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
         if (isStopRequested()) return;
 
         runtime.reset();
-
-        // Initialize arm for play
-        armPositionMode = ArmPositionMode.COMPACT;
-        armPositionInSet = 0;
-        armAssembly.applyPosition(compactPosition);
 
         // Run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
@@ -295,6 +302,11 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
                     rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
                 } else if (gamepad1.b) {
                     rightClawServo.setPosition(Constants.RIGHT_CLAW_OPEN);
+                }
+
+                // Drone release
+                if (gamepad2.share) {
+                    droneReleaseServo.setPosition(Constants.DRONE_RELEASE_OPEN);
                 }
 
                 // Set to slow drive speed

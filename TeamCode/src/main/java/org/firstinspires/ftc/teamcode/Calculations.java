@@ -65,11 +65,11 @@ public class Calculations {
         // Turn the vector into an angle
         double angle = Math.atan2(Math.abs(vx), vy) / Math.PI;
         // Scale the angle to the arm's encoder
-        angle *= Constants.LIFT_TICKS_180_DEGREES;
+        angle *= Constants.ROTATION_TICKS_180_DEGREES;
         // Get an offset to account for motor's zero position
-        angle -= Constants.LIFT_TICKS_180_DEGREES - Constants.LIFT_TICKS_NORTH;
+        angle -= Constants.ROTATION_TICKS_180_DEGREES - Constants.ROTATION_TICKS_NORTH;
         // Cast angle to int and clamp within allowed range
-        return Math.min(Math.max((int) angle, 0), Constants.LIFT_POSITION_MAX);
+        return Math.min(Math.max((int) angle, 0), Constants.ROTATION_POSITION_MAX);
     }
 
     public static int vectorToArmPositionFull(float vx, float vy) {
@@ -80,11 +80,11 @@ public class Calculations {
             angle += 2;
         }
         // Scale the angle to the arm's encoder
-        angle *= Constants.LIFT_TICKS_180_DEGREES;
+        angle *= Constants.ROTATION_TICKS_180_DEGREES;
         // Get an offset to account for motor's zero position
-        angle -= Constants.LIFT_TICKS_180_DEGREES - Constants.LIFT_TICKS_NORTH;
+        angle -= Constants.ROTATION_TICKS_180_DEGREES - Constants.ROTATION_TICKS_NORTH;
         // Cast angle to int and clamp within allowed range
-        return Math.min(Math.max((int) angle, 0), Constants.LIFT_POSITION_MAX_OVERRIDE);
+        return Math.min(Math.max((int) angle, 0), Constants.ROTATION_POSITION_MAX_OVERRIDE);
     }
 
     // Position scaling calculations
@@ -118,21 +118,21 @@ public class Calculations {
         return countsAbs * (encoders.getLeftFrontValue() < 0 ? -1 : 1);
     }
 
-    // The angle for the lift to point at, on a scale of 0 (straight down) to 1 (straight up)
-    // Remember that the lift motor's zero position will likely be above 0 on this scale
-    public static int scaleToEncoderArmLift(double scale) {
-        return (int) (scale * Constants.LIFT_TICKS_180_DEGREES - (Constants.LIFT_TICKS_180_DEGREES - Constants.LIFT_TICKS_NORTH));
+    // The angle for the rotation to point at, on a scale of 0 (straight down) to 1 (straight up)
+    // Remember that the rotation motor's zero position will likely be above 0 on this scale
+    public static int scaleToEncoderArmRotation(double scale) {
+        return (int) (scale * Constants.ROTATION_TICKS_180_DEGREES - (Constants.ROTATION_TICKS_180_DEGREES - Constants.ROTATION_TICKS_NORTH));
     }
-    public static double encoderToScaleArmLift(int encoder) {
-        return (double) (encoder + (Constants.LIFT_TICKS_180_DEGREES - Constants.LIFT_TICKS_NORTH)) / Constants.LIFT_TICKS_180_DEGREES;
+    public static double encoderToScaleArmRotation(int encoder) {
+        return (double) (encoder + (Constants.ROTATION_TICKS_180_DEGREES - Constants.ROTATION_TICKS_NORTH)) / Constants.ROTATION_TICKS_180_DEGREES;
     }
 
-    // The position for the stendo to travel to, on a scale of inches
-    public static int scaleToEncoderArmTravel(double scale) {
-        return (int) (scale * Constants.TRAVEL_TICKS_1_INCH);
+    // The position for the extension to travel to, on a scale of inches
+    public static int scaleToEncoderArmExtension(double scale) {
+        return (int) (scale * Constants.EXTENSION_TICKS_1_INCH);
     }
-    public static double encoderToScaleArmTravel(int encoder) {
-        return (double) encoder / Constants.TRAVEL_TICKS_1_INCH;
+    public static double encoderToScaleArmExtension(int encoder) {
+        return (double) encoder / Constants.EXTENSION_TICKS_1_INCH;
     }
 
     // The angle for the wrist to point at, on a scale where 1 is up

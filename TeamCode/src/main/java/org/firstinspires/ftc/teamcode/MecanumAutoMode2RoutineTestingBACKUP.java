@@ -64,8 +64,8 @@ public class MecanumAutoMode2RoutineTestingBACKUP {
         leftClawServo = hardwareMap.get(Servo.class, "left_claw_servo");
         rightClawServo = hardwareMap.get(Servo.class, "right_claw_servo");
 
-        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_lift_motor");
-        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_travel_motor");
+        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_rotation_motor");
+        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_extension_motor");
         Servo armWristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
 
         // Configure hardware
@@ -121,11 +121,11 @@ public class MecanumAutoMode2RoutineTestingBACKUP {
 
         armTravelMotor.setDirection(DcMotor.Direction.FORWARD);
         armTravelMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        zeroRunToPositionMotor(armTravelMotor, Constants.AUTO_ARM_TRAVEL_POWER);
+        zeroRunToPositionMotor(armTravelMotor, Constants.AUTO_ARM_EXTENSION_POWER);
 
         armLiftMotor.setDirection((DcMotor.Direction.FORWARD));
         armLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        zeroRunToPositionMotor(armLiftMotor, Constants.AUTO_ARM_LIFT_POWER);
+        zeroRunToPositionMotor(armLiftMotor, Constants.AUTO_ARM_ROTATION_POWER);
 
         armAssembly = new ArmAssembly(armLiftMotor, armTravelMotor, armWristServo);
 

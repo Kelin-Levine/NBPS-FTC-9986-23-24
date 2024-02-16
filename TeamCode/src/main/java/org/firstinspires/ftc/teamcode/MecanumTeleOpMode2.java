@@ -30,6 +30,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -90,6 +91,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  * Above every variable and method, it will say how many times its used. Click on that for a list of exactly where its used.
  */
 
+@Disabled
 @TeleOp(name="Gary Mecanum TeleOp Mode 2", group="Linear OpMode")
 public class MecanumTeleOpMode2 extends LinearOpMode {
 
@@ -162,8 +164,8 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
 
         Servo droneReleaseServo = hardwareMap.get(Servo.class, "drone_release_servo");
 
-        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_lift_motor");
-        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_travel_motor");
+        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_rotation_motor");
+        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_extension_motor");
         Servo armWristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
 
         // Configure hardware
@@ -198,11 +200,11 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
 
         armTravelMotor.setDirection(DcMotor.Direction.FORWARD);
         armTravelMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        zeroRunToPositionMotor(armTravelMotor, Constants.ARM_TRAVEL_POWER);
+        zeroRunToPositionMotor(armTravelMotor, Constants.ARM_EXTENSION_POWER);
 
         armLiftMotor.setDirection((DcMotor.Direction.FORWARD));
         armLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        zeroRunToPositionMotor(armLiftMotor, Constants.ARM_LIFT_POWER);
+        zeroRunToPositionMotor(armLiftMotor, Constants.ARM_ROTATION_POWER);
 
         ArmAssembly armAssembly = new ArmAssembly(armLiftMotor, armTravelMotor, armWristServo);
 
@@ -250,12 +252,12 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
                 // Do zeros here so that they go over normal button inputs
                 // Zero the arm lift motor
                 if (yButton1Now && !yButton1Last) {
-                    zeroRunToPositionMotor(armAssembly.getLiftMotor(), Constants.ARM_LIFT_POWER);
+                    zeroRunToPositionMotor(armAssembly.getLiftMotor(), Constants.ARM_ROTATION_POWER);
                 }
 
                 // Zero the arm stendo motor
                 if (xButton1Now && !xButton1Last) {
-                    zeroRunToPositionMotor(armAssembly.getTravelMotor(), Constants.ARM_TRAVEL_POWER);
+                    zeroRunToPositionMotor(armAssembly.getTravelMotor(), Constants.ARM_EXTENSION_POWER);
                 }
 
             } else {

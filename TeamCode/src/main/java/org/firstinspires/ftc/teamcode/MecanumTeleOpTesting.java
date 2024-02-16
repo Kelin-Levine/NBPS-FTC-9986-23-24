@@ -123,8 +123,8 @@ public class MecanumTeleOpTesting extends LinearOpMode {
         boolean isLimp = false;
         int controlMode = 0;
         // Power levels
-        double armStendoPower = Constants.ARM_TRAVEL_POWER;
-        double armLiftPower = Constants.ARM_LIFT_POWER;
+        double armStendoPower = Constants.ARM_EXTENSION_POWER;
+        double armLiftPower = Constants.ARM_ROTATION_POWER;
         // The value of inputs at the last loop
         float lTLast = 0.0f;
         float rTLast = 0.0f;
@@ -148,8 +148,8 @@ public class MecanumTeleOpTesting extends LinearOpMode {
 
         Servo droneReleaseServo = hardwareMap.get(Servo.class, "drone_release_servo");
 
-        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_lift_motor");
-        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_travel_motor");
+        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_rotation_motor");
+        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_extension_motor");
         Servo armWristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
 
         // Configure motors
@@ -158,6 +158,11 @@ public class MecanumTeleOpTesting extends LinearOpMode {
         rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
 
+
+        leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         leftBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -381,12 +386,12 @@ public class MecanumTeleOpTesting extends LinearOpMode {
             telemetry.addData("Wrist servo position:", armWristServo.getPosition());
             telemetry.addData("", "");
             telemetry.addData("Arm stendo power level:", (armStendoPower * 100.0) + "%");
-            telemetry.addData("Arm stendo scaled position:", Calculations.encoderToScaleArmTravel(armTravelMotor.getCurrentPosition()));
+            telemetry.addData("Arm stendo scaled position:", Calculations.encoderToScaleArmExtension(armTravelMotor.getCurrentPosition()));
             telemetry.addData("Arm stendo encoder position:", armTravelMotor.getCurrentPosition());
             telemetry.addData("Arm stendo motor power:", armTravelMotor.getPower());
             telemetry.addData("", "");
             telemetry.addData("Arm lift power level:", (armLiftPower * 100.0) + "%");
-            telemetry.addData("Arm lift scaled position:", Calculations.encoderToScaleArmLift(armLiftMotor.getCurrentPosition()));
+            telemetry.addData("Arm lift scaled position:", Calculations.encoderToScaleArmRotation(armLiftMotor.getCurrentPosition()));
             telemetry.addData("Arm lift encoder position:", armLiftMotor.getCurrentPosition());
             if (controlMode == 3) {
                 telemetry.addData("Arm lift target position:", armLiftMotor.getTargetPosition());

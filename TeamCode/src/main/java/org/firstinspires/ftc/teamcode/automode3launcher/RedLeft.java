@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode.automode3launcher;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.MecanumAutoMode3;
 
+@Disabled
 @Autonomous(name="Gary Mecanum Autonomous Mode 3 (Red-Left)", group="Robot")
 public class RedLeft extends MecanumAutoMode3 {
     @Override

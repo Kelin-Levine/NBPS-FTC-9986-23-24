@@ -13,24 +13,24 @@ package org.firstinspires.ftc.teamcode;
 public class ArmPosition {
 
     // Private instance variables
-    private final double liftAngle; // The angle for the lift to point at, on a scale of 0 (straight down) to 1 (straight up)
-    private final double travelPosition; // The position for the stendo to travel to, on a scale of inches
+    private final double rotationAngle; // The angle for the rotation to point at, on a scale of 0 (straight down) to 1 (straight up)
+    private final double extensionPosition; // The position for the extension to travel to, on a scale of inches
     private final double wristAngle; // The angle for the wrist to point at, on a scale where 1 is up
 
     // Constructor method
-    public ArmPosition(double liftAngle, double travelPosition, double wristAngle) {
-        this.liftAngle = liftAngle;
-        this.travelPosition = travelPosition;
+    public ArmPosition(double rotationAngle, double extensionPosition, double wristAngle) {
+        this.rotationAngle = rotationAngle;
+        this.extensionPosition = extensionPosition;
         this.wristAngle = wristAngle;
     }
 
     // Getter methods
-    public double getLiftAngle() {
-        return liftAngle;
+    public double getRotationAngle() {
+        return rotationAngle;
     }
 
-    public double getTravelPosition() {
-        return travelPosition;
+    public double getExtensionPosition() {
+        return extensionPosition;
     }
 
     public double getWristAngle() {

@@ -5,4 +5,6 @@ public enum SidePosition {
     LEFT,
     CENTER,
     RIGHT,
+    OUTSIDE,
+    INSIDE,
 }

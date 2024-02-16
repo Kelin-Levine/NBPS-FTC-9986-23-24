@@ -108,8 +108,8 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
         TouchSensor intakeStopButton = hardwareMap.get(TouchSensor.class, "intake_stop_button");
 
         Servo armWristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
-        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_travel_motor");
-        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_lift_motor");
+        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_extension_motor");
+        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_rotation_motor");
 
         // Configure motors
         leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
@@ -129,7 +129,7 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
         armLiftMotor.setDirection((DcMotor.Direction.FORWARD));
         // zero, then power, then position, then mode
         armLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        armLiftMotor.setPower(Constants.ARM_LIFT_POWER);
+        armLiftMotor.setPower(Constants.ARM_ROTATION_POWER);
         armLiftMotor.setTargetPosition(0);
         armLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
@@ -155,7 +155,7 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
                 // Zero the arm motor
                 if (gamepad1.y) {
                     armLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    armLiftMotor.setPower(Constants.ARM_LIFT_POWER);
+                    armLiftMotor.setPower(Constants.ARM_ROTATION_POWER);
                     armLiftMotor.setTargetPosition(0);
                     armLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     /*armLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -166,9 +166,9 @@ public class MecanumTeleOpMode1 extends LinearOpMode {
                 // Do button inputs here so that they are ignored if both bumpers are pressed
                 // Arm travel motor
                 if (gamepad1.x) {
-                    armTravelMotor.setPower(Constants.ARM_TRAVEL_POWER);
+                    armTravelMotor.setPower(Constants.ARM_EXTENSION_POWER);
                 } else if (gamepad1.a) {
-                    armTravelMotor.setPower(-Constants.ARM_TRAVEL_POWER);
+                    armTravelMotor.setPower(-Constants.ARM_EXTENSION_POWER);
                 } else {
                     armTravelMotor.setPower(0);
                 }

@@ -3,15 +3,14 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
-import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.subsystems.ArmSubsystem;
 import org.openftc.apriltag.AprilTagDetection;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
@@ -39,9 +38,15 @@ public class MecanumAutoMode3b extends LinearOpMode {
     }
 
 
+    // Protected variables are private variables that are accessible by subclasses and classes in the same "package".
+    // Put simply, the package is the folder that the class is in. Classes are grouped by package.
+    // These variables are used as settings for what the robot should do when the OpMode is run.
     protected boolean isBlueSide;
     protected boolean isLongDistance;
     protected boolean isDoingAlternateRoute = Constants.AUTO_USE_ALTERNATE_ROUTES;
+    protected SidePosition parkSide = Constants.AUTO_PARK_SIDE;
+    protected boolean isWaitingForEnd = false;
+    protected boolean isMovingInPark = false;
     protected Routine selectedRoutine = Routine.NORMAL;
 
     @Override
@@ -59,15 +64,11 @@ public class MecanumAutoMode3b extends LinearOpMode {
         // Execute the selected auto routine
         switch (selectedRoutine) {
             case NORMAL:
-                if (Constants.AUTO_FLIP_CLAWS != null) {
-                    runRoutine(isBlueSide, isLongDistance, isDoingAlternateRoute, Constants.AUTO_FLIP_CLAWS, Constants.AUTO_PARK_SIDE);
-                } else {
-                    runRoutine(isBlueSide, isLongDistance, isDoingAlternateRoute, isBlueSide, Constants.AUTO_PARK_SIDE);
-                }
+                runRoutine(isBlueSide, isLongDistance, isDoingAlternateRoute, isBlueSide, parkSide, isWaitingForEnd, isMovingInPark);
                 break;
 
             case AMBITIOUS:
-                runRoutineAmbitious(isBlueSide, isLongDistance, isDoingAlternateRoute, Constants.AUTO_PARK_SIDE);
+                runRoutineAmbitious(isBlueSide, isLongDistance, isDoingAlternateRoute, parkSide, isWaitingForEnd, isMovingInPark);
                 break;
         }
 
@@ -80,7 +81,6 @@ public class MecanumAutoMode3b extends LinearOpMode {
     // End of launcher
 
 
-
     // Variables
 
     // Pre-programmed positions
@@ -90,6 +90,10 @@ public class MecanumAutoMode3b extends LinearOpMode {
     private final ArmPosition onFieldGrabPosition = new ArmPosition(0.27, 0, 0.7);
     private final ArmPosition backdropPlacePosition = new ArmPosition(0.38, 0, 0.85);
 
+    private final double placeInnerOffset = 12.5; // The sideways offset when placing on a side of the backdrop from the side of the claw inner to the backdrop
+    private final double placeOuterOffset = 8.5; // The sideways offset when placing on a side of the backdrop from the side of the claw outer to the backdrop
+    private final double placeCenterOffset = -4.5; // The sideways offset when placing at the center of the backdrop
+
     // Working variables
     final ElapsedTime runtime = new ElapsedTime();
     private Boolean isCameraOpened = null;
@@ -97,11 +101,8 @@ public class MecanumAutoMode3b extends LinearOpMode {
 
     // Hardware objects
     private OpenCvCamera frontCamera;
-    private Servo leftClawServo;
-    private Servo rightClawServo;
-    //private QuadDcMotorArray motors;
     private SampleMecanumDrive mDrive;
-    private ArmAssembly armAssembly;
+    private ArmSubsystem armSubsystem;
 
 
     // Method to initialize the robot
@@ -109,18 +110,6 @@ public class MecanumAutoMode3b extends LinearOpMode {
         // Initialize the motors/hardware. The names used here must correspond to the names set on the driver control station.
         WebcamName frontWebcam = hardwareMap.get(WebcamName.class, "front_webcam");
         int frontCameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-
-        /*DcMotor leftFrontDrive = hardwareMap.get(DcMotor.class, "left_front_drive");
-        DcMotor leftBackDrive = hardwareMap.get(DcMotor.class, "left_back_drive");
-        DcMotor rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
-        DcMotor rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");*/
-
-        leftClawServo = hardwareMap.get(Servo.class, "left_claw_servo");
-        rightClawServo = hardwareMap.get(Servo.class, "right_claw_servo");
-
-        DcMotor armLiftMotor = hardwareMap.get(DcMotor.class, "arm_lift_motor");
-        DcMotor armTravelMotor = hardwareMap.get(DcMotor.class, "arm_travel_motor");
-        Servo armWristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
 
         // Configure hardware
 
@@ -146,50 +135,14 @@ public class MecanumAutoMode3b extends LinearOpMode {
             }
         });
 
-        // Drive motors
-        /*leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
-
-        leftFrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftBackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightFrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightBackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        // dark voodoo spell to set the p coefficients using evil magical techniques
-        ((DcMotorEx) leftFrontDrive).setPositionPIDFCoefficients(Constants.DRIVE_P_COEFFICIENT);
-        ((DcMotorEx) leftBackDrive).setPositionPIDFCoefficients(Constants.DRIVE_P_COEFFICIENT);
-        ((DcMotorEx) rightFrontDrive).setPositionPIDFCoefficients(Constants.DRIVE_P_COEFFICIENT);
-        ((DcMotorEx) rightBackDrive).setPositionPIDFCoefficients(Constants.DRIVE_P_COEFFICIENT);
-
-        motors = new QuadDcMotorArray(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, Constants.AUTO_DRIVE_POWER_MULTIPLIER);
-
-        motors.zeroMotorsRunToPosition();*/
+        // Drivetrain
         mDrive = new SampleMecanumDrive(hardwareMap);
 
-        // Claw servos
-        leftClawServo.setDirection(Servo.Direction.REVERSE);
-        rightClawServo.setDirection(Servo.Direction.FORWARD);
-
-        leftClawServo.setPosition(Constants.LEFT_CLAW_CLOSED);
-        rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
-
         // Arm assembly
-        armWristServo.setDirection(Servo.Direction.REVERSE);
-        armWristServo.setPosition(Constants.WRIST_POSITION_UP + 0.1);
-
-        armTravelMotor.setDirection(DcMotor.Direction.FORWARD);
-        armTravelMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        zeroRunToPositionMotor(armTravelMotor, Constants.AUTO_ARM_TRAVEL_POWER);
-
-        armLiftMotor.setDirection((DcMotor.Direction.FORWARD));
-        armLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        zeroRunToPositionMotor(armLiftMotor, Constants.AUTO_ARM_LIFT_POWER);
-
-        armAssembly = new ArmAssembly(armLiftMotor, armTravelMotor, armWristServo);
-
-        //armAssembly.applyPosition(compactPosition);
+        armSubsystem = new ArmSubsystem(hardwareMap);
+        armSubsystem.closeLeftClaw();
+        armSubsystem.closeRightClaw();
+        armSubsystem.applyPosition(compactPosition);
 
         // Initialization complete
         telemetry.addData("Status", "Initialized");
@@ -204,7 +157,7 @@ public class MecanumAutoMode3b extends LinearOpMode {
      *
      * Reminder: angles in RoadRunnner are measured in counter-clockwise radians.
      */
-    public void runRoutine(boolean isBlueSide, boolean isLongDistance, boolean isDoingAlternateRoute, boolean isFlippedClaws, SidePosition parkSide) {
+    public void runRoutine(boolean isBlueSide, boolean isLongDistance, boolean isDoingAlternateRoute, boolean isFlippedClaws, SidePosition parkSide, boolean isWaitingForEnd, boolean isMovingInPark) {
         // START
         telemetry.addData("Starting autonomous routine.", "");
         telemetry.update();
@@ -224,6 +177,15 @@ public class MecanumAutoMode3b extends LinearOpMode {
         routinePlaceAtSpikeMarker(isFlippedClaws);
         mDrive.turn((Math.PI / 2) * (isBlueSide ? 1 : -1));
 
+        // WAIT FOR OTHER ROBOTS
+        /*
+         * At this point, the robot is centered on the tile that it started on and is
+         * facing the backdrop.
+         */
+        if (isWaitingForEnd) {
+            routineWaitAtStart(isLongDistance);
+        }
+
         // APPROACH BACKDROP
         /*
          * At this point, the robot is centered on the tile that it started on and is
@@ -231,18 +193,9 @@ public class MecanumAutoMode3b extends LinearOpMode {
          */
         routineApproachBackdrop(isBlueSide, isLongDistance, isDoingAlternateRoute);
 
-        // WAIT FOR OTHER ROBOTS
-        /*
-         * At this point, the robot is centered on the tile in front of the backdrop, facing the
-         * backdrop.
-         */
-        if (isLongDistance) {
-            routineWaitForAprilTags();
-        }
-
         // PLACE ON CORRECT SIDE OF BACKDROP
         /*
-         * At this point, the robot is still centered on the tile in front of the backdrop, facing
+         * At this point, the robot is centered on the tile in front of the backdrop, facing
          * the backdrop. placeBackdropPixel() will drive up to and away from the backdrop.
          */
         double sidewaysPlaceOffset = routinePlaceOnBackdrop(isFlippedClaws);
@@ -250,10 +203,17 @@ public class MecanumAutoMode3b extends LinearOpMode {
         // PARK
         /*
          * At this point, the robot is about 3 inches away from the front of the backdrop, facing
-         * the backdrop. It is to the right (relative) of the center of the backdrop by
-         * sidewaysPlaceOffset inches.
+         * the backdrop. It is to the right of the center of the backdrop by sidewaysPlaceOffset inches.
          */
         routinePark(isBlueSide, parkSide, sidewaysPlaceOffset);
+
+        // MAKE ROOM FOR OTHER ROBOTS
+        /*
+         * At this point, the robot has parked at the desired side and is facing forward.
+         */
+        if (isMovingInPark) {
+            routineMoveInPark(isBlueSide);
+        }
 
         // COMPLETE
         telemetry.addData("Autonomous routine complete.", "( " + Math.ceil(runtime.seconds()) + " seconds)");
@@ -268,9 +228,9 @@ public class MecanumAutoMode3b extends LinearOpMode {
      * and the yellow pixel should be preloaded in the right claw.
      * If this routine is run on the blue side, the purple pixel should be preloaded in the right
      * claw and the yellow pixel should be preloaded in the left claw.
-     * If you mess this up, the 60 point auto will turn into a 25 point auto.
+     * If you mess this up, the 55 point auto will turn into a 15 point auto.
      */
-    public void runRoutineAmbitious(boolean isBlueSide, boolean isLongDistance, boolean isDoingAlternateRoute, SidePosition parkSide) {
+    public void runRoutineAmbitious(boolean isBlueSide, boolean isLongDistance, boolean isDoingAlternateRoute, SidePosition parkSide, boolean isWaitingForEnd, boolean isMovingInPark) {
         // START
         telemetry.addData("Starting ambitious autonomous routine.", "");
         telemetry.update();
@@ -296,19 +256,21 @@ public class MecanumAutoMode3b extends LinearOpMode {
          */
         routineGrabOnFieldPixel(isBlueSide);
 
+        // WAIT FOR OTHER ROBOTS
+        /*
+         * At this point, the robot is centered on the tile that it started on and is
+         * facing the backdrop.
+         */
+        if (isWaitingForEnd) {
+            routineWaitAtStart(true);
+        }
+
         // APPROACH BACKDROP
         /*
          * At this point, the robot is centered on the tile that it started on and is
          * facing the backdrop.
          */
         routineApproachBackdrop(isBlueSide, true, isDoingAlternateRoute);
-
-        // WAIT FOR OTHER ROBOTS
-        /*
-         * At this point, the robot is centered on the tile in front of the backdrop, facing the
-         * backdrop.
-         */
-        routineWaitForAprilTags();
 
         // PLACE ON CORRECT SIDE OF BACKDROP
         /*
@@ -320,10 +282,17 @@ public class MecanumAutoMode3b extends LinearOpMode {
         // PARK
         /*
          * At this point, the robot is about 3 inches away from the front of the backdrop, facing
-         * the backdrop. It is to the right (relative) of the center of the backdrop by
-         * sidewaysPlaceOffset inches.
+         * the backdrop. It is to the right of the center of the backdrop by sidewaysPlaceOffset inches.
          */
         routinePark(isBlueSide, parkSide, sidewaysPlaceOffset);
+
+        // MAKE ROOM FOR OTHER ROBOTS
+        /*
+         * At this point, the robot has parked at the desired side and is facing forward.
+         */
+        if (isMovingInPark) {
+            routineMoveInPark(isBlueSide);
+        }
 
         // COMPLETE
         telemetry.addData("Autonomous routine complete.", "( " + Math.ceil(runtime.seconds()) + " seconds)");
@@ -426,51 +395,69 @@ public class MecanumAutoMode3b extends LinearOpMode {
                 break;
         }
 
+        Trajectory traj3 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .lineTo(new Vector2d(startingPose.getX(), startingPose.getY()))
+                .build();
+        mDrive.followTrajectory(traj3);
+
         /*
          * We assume that a tile is 22.75 inches wide without teeth that the teeth are 0.75 inches
          * wide. We assume that the robot is 18 inches long, so the center of the robot is 9 inches
          * in from the back, so therefore the robot itself needs to be at 7.875 inches out to be
          * centered on the first tile.
          */
-        // 19 - 11.125 = 7.875
-        Trajectory traj3 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
-                .lineTo(new Vector2d(startingPose.getX(), startingPose.getY()))
-                .build();
-        mDrive.followTrajectory(traj3);
-
         Trajectory traj4 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
-                .lineTo(offsetOfCurrentPosition(-11.125, 0))
+                .lineTo(new Vector2d(7.875, 0))
                 .build();
         mDrive.followTrajectory(traj4);
-        // TODO: maybe replace this with a specific position to improve accuracy?
     }
 
     private void routineGrabOnFieldPixel(boolean isBlueSide) {
-        armAssembly.applyPosition(onFieldHighPosition);
+        armSubsystem.applyPosition(onFieldHighPosition);
         if (isBlueSide) {
-            rightClawServo.setPosition(Constants.RIGHT_CLAW_OPEN);
-            turnCW90(0.6125);
+            armSubsystem.openRightClaw();
         } else {
-            leftClawServo.setPosition(Constants.LEFT_CLAW_OPEN);
-            turnCW90(-0.6125);
+            armSubsystem.openLeftClaw();
         }
-        driveForward(22.125);
-        armAssembly.applyPosition(onFieldGrabPosition);
-        sleep(500);
+
+        Trajectory traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .lineToLinearHeading(new Pose2d(12.7, 18.1, 0.96 * (isBlueSide ? -1 : 1)))
+                .build();
+        mDrive.followTrajectory(traj1);
+
+        armSubsystem.applyPosition(onFieldGrabPosition);
+        sleep(400);
         if (isBlueSide) {
-            rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
+            armSubsystem.closeRightClaw();
         } else {
-            leftClawServo.setPosition(Constants.LEFT_CLAW_CLOSED);
+            armSubsystem.closeLeftClaw();
         }
-        sleep(500);
-        armAssembly.applyPosition(onFieldHighPosition);
-        driveForward(-22.125);
-        armAssembly.applyPosition(compactPosition);
-        turnCW90(isBlueSide ? -1.6 : 1.6);
+        sleep(300);
+        armSubsystem.applyPosition(onFieldHighPosition);
+
+        Trajectory traj2 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .lineToLinearHeading(new Pose2d(7.875, 0, (Math.PI / 2) * (isBlueSide ? 1 : -1)))
+                .addTemporalMarker(0.5, () -> armSubsystem.applyPosition(compactPosition))
+                .build();
+        mDrive.followTrajectory(traj2);
+    }
+
+    private void routineWaitAtStart(boolean isLongDistance) {
+        Trajectory traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .lineTo(new Vector2d(23.5 + 7.875, 0))
+                .build();
+        mDrive.followTrajectory(traj1);
+
+        sleep((int) ((30.0 - runtime.seconds() - (isLongDistance ? Constants.AUTO_MIN_TIME_FAR : Constants.AUTO_MIN_TIME_NEAR)) * 1000));
+
+        Trajectory traj2 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .lineToLinearHeading(new Pose2d(7.875, 0, (Math.PI / 2) * (isBlueSide ? 1 : -1)))
+                .build();
+        mDrive.followTrajectory(traj2);
     }
 
     private void routineApproachBackdrop(boolean isBlueSide, boolean isLongDistance, boolean isDoingAlternateRoute) {
-        // "Premature optimization is the root of all evil" -someone who shouldn't have been ignored
+        // "Premature optimization is the root of all evil"
         Trajectory traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
                 .lineTo(offsetOfCurrentPosition(0, (23.5 * (isLongDistance && !isDoingAlternateRoute ? 3 : 1)) * (isBlueSide ? 1 : -1)))
                 .build();
@@ -500,7 +487,7 @@ public class MecanumAutoMode3b extends LinearOpMode {
                 .build();
         mDrive.followTrajectory(traj5);*/
 
-        armAssembly.applyPosition(backdropPlacePosition);
+        armSubsystem.applyPosition(backdropPlacePosition);
     }
 
     private void routineWaitForAprilTags() {
@@ -604,27 +591,28 @@ public class MecanumAutoMode3b extends LinearOpMode {
         switch (spikeMarkerPosition) {
             case LEFT:
                 // Scoring at the left side of the backdrop
-                sidewaysPlaceOffset = !isUsingOppositeClaw ? -12.5 : -8.5;
+                sidewaysPlaceOffset = !isUsingOppositeClaw ? -placeInnerOffset : -placeOuterOffset;
                 break;
 
             case CENTER:
                 // Scoring at the center of the backdrop
-                sidewaysPlaceOffset = !isUsingOppositeClaw ? -4.5 : 4.5;
+                sidewaysPlaceOffset = !isUsingOppositeClaw ? placeCenterOffset : -placeCenterOffset;
                 break;
 
             case RIGHT:
                 // Scoring at the right side of the backdrop
-                sidewaysPlaceOffset = !isUsingOppositeClaw ? 8.5 : 12.5;
+                sidewaysPlaceOffset = !isUsingOppositeClaw ? placeOuterOffset : placeInnerOffset;
                 break;
         }
 
-        TrajectoryBuilder traj = mDrive.trajectoryBuilder(mDrive.getPoseEstimate());
+        /*TrajectoryBuilder traj = mDrive.trajectoryBuilder(mDrive.getPoseEstimate());
         if (sidewaysPlaceOffset > 0) {
             traj.strafeRight(sidewaysPlaceOffset);
         } else {
             traj.strafeLeft(Math.abs(sidewaysPlaceOffset));
         }
-        mDrive.followTrajectory(traj.build());
+        mDrive.followTrajectory(traj.build());*/
+        mDrive.strafeRight(sidewaysPlaceOffset);
 
         placeBackdropPixel(isUsingOppositeClaw, !isUsingOppositeClaw);
         return sidewaysPlaceOffset;
@@ -643,24 +631,24 @@ public class MecanumAutoMode3b extends LinearOpMode {
                 case LEFT:
                     // Scoring at the left side of the backdrop
                     // This has to go twice because there's no way to line up both claws at once
-                    driveSideways(-11);
+                    mDrive.strafeRight(-placeInnerOffset);
                     placeBackdropPixel(false, true);
-                    driveSideways(5);
+                    mDrive.strafeRight(5);
                     placeBackdropPixel(true, false, 3);
-                    sidewaysPlaceOffset = -11 + 5;
+                    sidewaysPlaceOffset = -placeInnerOffset + 5;
                     break;
 
                 case CENTER:
                     // Scoring at the center of the backdrop
-                    sidewaysPlaceOffset = -3;
-                    driveSideways(sidewaysPlaceOffset);
+                    sidewaysPlaceOffset = placeCenterOffset;
+                    mDrive.strafeRight(sidewaysPlaceOffset);
                     placeBackdropPixel(true, true);
                     break;
 
                 case RIGHT:
                     // Scoring at the right side of the backdrop
-                    sidewaysPlaceOffset = 3;
-                    driveSideways(sidewaysPlaceOffset);
+                    sidewaysPlaceOffset = placeOuterOffset;
+                    mDrive.strafeRight(sidewaysPlaceOffset);
                     placeBackdropPixel(true, true);
                     break;
             }
@@ -669,26 +657,26 @@ public class MecanumAutoMode3b extends LinearOpMode {
             switch (spikeMarkerPosition) {
                 case LEFT:
                     // Scoring at the left side of the backdrop
-                    sidewaysPlaceOffset = -3;
-                    driveSideways(sidewaysPlaceOffset);
+                    sidewaysPlaceOffset = -placeOuterOffset;
+                    mDrive.strafeRight(sidewaysPlaceOffset);
                     placeBackdropPixel(true, true);
                     break;
 
                 case CENTER:
                     // Scoring at the center of the backdrop
-                    sidewaysPlaceOffset = 3;
-                    driveSideways(sidewaysPlaceOffset);
+                    sidewaysPlaceOffset = -placeCenterOffset;
+                    mDrive.strafeRight(sidewaysPlaceOffset);
                     placeBackdropPixel(true, true);
                     break;
 
                 case RIGHT:
                     // Scoring at the right side of the backdrop
                     // This has to go twice because there's no way to line up both claws at once
-                    driveSideways(11);
+                    mDrive.strafeRight(placeInnerOffset);
                     placeBackdropPixel(true, false);
-                    driveSideways(-5);
+                    mDrive.strafeRight(-5);
                     placeBackdropPixel(false, true, 3);
-                    sidewaysPlaceOffset = 11 - 5;
+                    sidewaysPlaceOffset = placeInnerOffset - 5;
                     break;
             }
         }
@@ -697,51 +685,41 @@ public class MecanumAutoMode3b extends LinearOpMode {
 
     private void routinePark(boolean isBlueSide, SidePosition parkSide, double sidewaysPlaceOffset) {
         // Face away from the driver station so that the heading initializes correctly in teleop
-        /*Trajectory traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(offsetOfCurrentPosition(0, 0), 0))
-                .build();
-        mDrive.followTrajectory(traj1);*/
         mDrive.turn((Math.PI / 2) * (isBlueSide ? -1 : 1));
 
-        // Forget park position, always park on the outside
-        if (isBlueSide) {
+        // Park on the correct side
+        if (parkSide == SidePosition.LEFT
+                || (parkSide == SidePosition.OUTSIDE && isBlueSide)
+                || (parkSide == SidePosition.INSIDE && !isBlueSide)) {
             // Parking at the left side of the backstage
-            Trajectory traj2 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
-                    .back(23.5 + sidewaysPlaceOffset + 3)
+            Trajectory traj = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                    .forward((23.5 + sidewaysPlaceOffset) * (isBlueSide ? -1 : 1))
                     .build();
-            mDrive.followTrajectory(traj2);
-        } else {
-            // Parking at the right side of the backstage
-            Trajectory traj2 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
-                    .back(23.5 - sidewaysPlaceOffset + 3)
-                    .build();
-            mDrive.followTrajectory(traj2);
-        }
-        /*switch (parkSide) {
-            case LEFT:
-                // Parking at the left side of the backstage
-                TrajectoryBuilder traj2l = mDrive.trajectoryBuilder(mDrive.getPoseEstimate());
-                double distancel = (23.5 + sidewaysPlaceOffset) * (isBlueSide ? -1 : 1);
-                if (distancel > 0) {
-                    traj2l.forward(distancel);
-                } else {
-                    traj2l.back(Math.abs(distancel));
-                }
-                mDrive.followTrajectory(traj2l.build());
-                break;
+            mDrive.followTrajectory(traj);
 
-            case RIGHT:
-                // Parking at the right side of the backstage
-                TrajectoryBuilder traj2r = mDrive.trajectoryBuilder(mDrive.getPoseEstimate());
-                double distancer = (23.5 - sidewaysPlaceOffset) * (isBlueSide ? 1 : -1);
-                if (distancer > 0) {
-                    traj2r.forward(distancer);
-                } else {
-                    traj2r.back(Math.abs(distancer));
-                }
-                mDrive.followTrajectory(traj2r.build());
-                break;
-        }*/
+        } else if (parkSide == SidePosition.RIGHT
+                || (parkSide == SidePosition.OUTSIDE && !isBlueSide)
+                || (parkSide == SidePosition.INSIDE && isBlueSide)) {
+            // Parking at the right side of the backstage
+            Trajectory traj = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                    .forward((23.5 - sidewaysPlaceOffset) * (isBlueSide ? 1 : -1))
+                    .build();
+            mDrive.followTrajectory(traj);
+        }
+    }
+
+    private void routineMoveInPark(boolean isBlueSide) {
+        Trajectory traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .strafeRight((23.5 * 2) * (isBlueSide ? 1 : -1))
+                .build();
+        mDrive.followTrajectory(traj1);
+
+        sleep((int) (30000 - runtime.milliseconds() - 1000));
+
+        Trajectory traj2 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
+                .strafeLeft((23.5 * 2) * (isBlueSide ? 1 : -1))
+                .build();
+        mDrive.followTrajectory(traj2);
     }
 
     // Method to drive forward a specific number of inches
@@ -771,26 +749,27 @@ public class MecanumAutoMode3b extends LinearOpMode {
 
     // Method to place a pixel on a spike line
     private void placeSpikePixel(boolean isUsingOppositeClaw) {
-        armAssembly.applyPosition(spikePlacePosition);
+        armSubsystem.applyPosition(spikePlacePosition);
         sleep(300);
         if (!isUsingOppositeClaw) {
-            leftClawServo.setPosition(Constants.LEFT_CLAW_OPEN);
+            armSubsystem.openLeftClaw();
         } else {
-            rightClawServo.setPosition(Constants.RIGHT_CLAW_OPEN);
+            armSubsystem.openRightClaw();
         }
         sleep(200);
         if (!isUsingOppositeClaw) {
-            leftClawServo.setPosition(Constants.LEFT_CLAW_CLOSED);
+            armSubsystem.closeLeftClaw();
         } else {
-            rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
+            armSubsystem.closeRightClaw();
         }
-        armAssembly.applyPosition(compactPosition);
+        armSubsystem.applyPosition(compactPosition);
     }
 
     // Method to approach and place a pixel on the backdrop
     private void placeBackdropPixel(boolean isUsingLeftClaw, boolean isUsingRightClaw) {
         placeBackdropPixel(isUsingLeftClaw, isUsingRightClaw, 14);
     }
+
     private void placeBackdropPixel(boolean isUsingLeftClaw, boolean isUsingRightClaw, double approachDistance) {
         Trajectory traj1 = mDrive.trajectoryBuilder(mDrive.getPoseEstimate())
                 .forward(approachDistance)
@@ -798,10 +777,10 @@ public class MecanumAutoMode3b extends LinearOpMode {
         mDrive.followTrajectory(traj1);
 
         if (isUsingRightClaw) {
-            rightClawServo.setPosition(Constants.RIGHT_CLAW_OPEN);
+            armSubsystem.openRightClaw();
         }
         if (isUsingLeftClaw) {
-            leftClawServo.setPosition(Constants.LEFT_CLAW_OPEN);
+            armSubsystem.openLeftClaw();
         }
         sleep(100);
 
@@ -811,12 +790,12 @@ public class MecanumAutoMode3b extends LinearOpMode {
         mDrive.followTrajectory(traj2);
 
         if (isUsingRightClaw) {
-            rightClawServo.setPosition(Constants.RIGHT_CLAW_CLOSED);
+            armSubsystem.closeRightClaw();
         }
         if (isUsingLeftClaw) {
-            leftClawServo.setPosition(Constants.LEFT_CLAW_CLOSED);
+            armSubsystem.closeLeftClaw();
         }
-        armAssembly.applyPosition(compactPosition);
+        armSubsystem.applyPosition(compactPosition);
     }
 
     // Method to generate a pose by offsetting from the current pose

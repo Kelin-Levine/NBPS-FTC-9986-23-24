@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.config.Config;
+
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 
@@ -15,6 +17,7 @@ import org.opencv.core.Scalar;
  * If a final variable is a primitive type (such as int or boolean), it cannot be changed at all after being created.
  * Final variables are useful for numbers that need to be used in multiple places but shouldn't change.
  */
+@Config
 public class Constants {
 
     // Control configuration
@@ -26,24 +29,24 @@ public class Constants {
     public static final boolean   USE_RANGE_SENSOR           = false; // Whether the autonomous portion should try to make use of a range sensor
     public static final boolean   USE_EXTENSION_SERVO        = true;  // Whether the robot should look for a continuous rotation servo to use for the extension rather than a motor
 
-    public static final double    DRONE_RELEASE_CLOSED       = 0.875; // The position of the shooter when it's fully closed
+    public static final double    DRONE_RELEASE_CLOSED       = 0.87; // The position of the shooter when it's fully closed
     public static final double    DRONE_RELEASE_OPEN         = 1.0; // The position of the shooter claw when it's fully open
 
-    public static final double    LEFT_CLAW_CLOSED           = 0.70; // The position of the left claw when it's fully closed
-    public static final double    LEFT_CLAW_PARTLY           = 0.62; // The position of the left claw when it's partly open
-    public static final double    LEFT_CLAW_OPEN             = 0.27; // The position of the left claw when it's fully open
-    public static final double    RIGHT_CLAW_CLOSED          = 0.72; // The position of the right claw when it's fully closed
-    public static final double    RIGHT_CLAW_PARTLY          = 0.64; // The position of the right claw when it's partly open
-    public static final double    RIGHT_CLAW_OPEN            = 0.29; // The position of the right claw when it's fully open
+    public static final double    LEFT_CLAW_CLOSED           = 0.77; // The position of the left claw when it's fully closed
+    public static final double    LEFT_CLAW_PARTLY           = 0.59; // The position of the left claw when it's partly open
+    public static final double    LEFT_CLAW_OPEN             = 0.30; // The position of the left claw when it's fully open
+    public static final double    RIGHT_CLAW_CLOSED          = 0.77; // The position of the right claw when it's fully closed
+    public static final double    RIGHT_CLAW_PARTLY          = 0.59; // The position of the right claw when it's partly open
+    public static final double    RIGHT_CLAW_OPEN            = 0.30; // The position of the right claw when it's fully open
 
     public static final double    WRIST_POSITION_UP          = 0.62; // The servo position for the wrist when the arm is down the wrist is pointing straight up
 
     public static final int       EXTENSION_TICKS_1_INCH     = 32;   // The number of encoder ticks for the arm extension to extend 1 inch
 
-    public static final int       ROTATION_TICKS_180_DEGREES     = 2200 * 2; // The number of encoder ticks for the arm rotation to travel 180 degrees
-    public static final int       ROTATION_TICKS_NORTH           = 3600;     // The number of arm rotation encoder ticks at the north (straight up) position
-    public static final int       ROTATION_POSITION_MAX          = 3000;     // The safe maximum number of arm rotation encoder ticks for the arm to swing between
-    public static final int       ROTATION_POSITION_MAX_OVERRIDE = 5600;     // The absolute maximum number of encoder ticks for the arm rotation to swing between
+    public static final int       ROTATION_TICKS_180_DEGREES     = (2450 - 900) * 2; // The number of encoder ticks for the arm rotation to travel 180 degrees
+    public static final int       ROTATION_TICKS_NORTH           = 2450;     // The number of arm rotation encoder ticks at the north (straight up) position
+    public static final double    ROTATION_POSITION_MAX          = 0.95;     // The safe maximum number of arm rotation encoder ticks for the arm to swing between
+    public static final int       ROTATION_POSITION_MAX_OVERRIDE = 4600;     // The absolute maximum number of encoder ticks for the arm rotation to swing between
 
     public static final double    DRIVE_TICKS_REVOLUTION     = 537.6;  // The number of encoder ticks in one revolution of a drive motor
     public static final int       DRIVE_TICKS_ROBOT_STRAFE_1 = 48;   // The (positive) number of encoder ticks of each drive motor to strafe the robot 1 inch
@@ -65,6 +68,7 @@ public class Constants {
 
     // TeleOp configuration
     public static final double    DRIVE_POWER_MULTIPLIER      = 1.0; // The multiplier scale on the robot's drivetrain power
+    public static final double    DRIVE_POWER_MULTIPLIER_MED  = 0.6; // The multiplier scale on the robot's drivetrain power (when going medium speed)
     public static final double    DRIVE_POWER_MULTIPLIER_SLOW = 0.4; // The multiplier scale on the robot's drivetrain power (when going slow)
     public static final double    ARM_ROTATION_POWER          = 0.6; // The amount of power that the arm rotates with
     public static final double    ARM_EXTENSION_POWER         = 0.4; // The amount of power that the arm extends/retracts with
@@ -78,8 +82,10 @@ public class Constants {
     public static final Boolean   AUTO_FLIP_CLAWS               = null;  // (not used in latest auto) Whether to flip which sides of the claw to use in auto (set to null for automatic)
     public static final SidePosition    AUTO_PARK_SIDE          = SidePosition.OUTSIDE; // What side of the backstage to park in during auto
 
-    public static final double    AUTO_MIN_TIME_NEAR            = 6.0;   // The minimum amount of time (seconds) that the nearside auto can complete in
-    public static final double    AUTO_MIN_TIME_FAR             = 8.0;   // The minimum amount of time (seconds) that the farside auto can complete in
+    public static final double    AUTO_MIN_TIME_NEAR            = 10.0;   // The minimum amount of time (seconds) that the nearside auto can complete in
+    public static final double    AUTO_TIME_ADD_FAR             = 2.0;   // The amount of time (seconds) that it adds to do the auto from the farside
+    public static final double    AUTO_TIME_ADD_FAR_ALT         = 50.0;   // The amount of time (seconds) that it adds to do the auto's alternate route (farside)
+    public static final double    AUTO_TIME_ADD_SCORE_2X        = 2.0;   // The amount of time (seconds) that it adds to score two pixels during the auto
 
     public static final double    AUTO_DRIVE_POWER_MULTIPLIER   = 0.45; // (only used in auto mode 2) The multiplier scale on the robot's drivetrain power (in autonomous)
     public static final double    AUTO_ARM_ROTATION_POWER       = 0.6;  // (not used in latest auto) The amount of power that the arm rotates with (in autonomous)
@@ -90,14 +96,14 @@ public class Constants {
     //public static final Point VISION_REGION1_TOPLEFT_ANCHOR_POINT = new Point(445,350); // The top-left corner of the area of the right spike marker in the image at the start of auto
     //public static final Point VISION_REGION2_TOPLEFT_ANCHOR_POINT = new Point(140,320); // The top-left corner of the area of the middle spike marker in the image at the start of auto
     //public static final Point VISION_REGION3_TOPLEFT_ANCHOR_POINT = new Point(253,98); // The top-left corner of the area of the left spike marker in the image at the start of auto
-    public static final Point VISION_REGION1_CENTER_ANCHOR_POINT = new Point(480,365); // The center of the area of the right spike marker in the image at the start of auto
-    public static final Point VISION_REGION2_CENTER_ANCHOR_POINT = new Point(150,335); // The center of the area of the middle spike marker in the image at the start of auto
-    public static final int   VISION_SUBREGION_WIDTH    = 20;  // The width of the area to look for a spike marker in the vision image
-    public static final int   VISION_SUBREGION_HEIGHT   = 30;  // The height of the area to look for a spike marker in the vision image
-    public static final int   VISION_REGION1_SUBREGION_COUNT     = 3;   // The number of subregions to look for the right spike marker
-    public static final int   VISION_REGION2_SUBREGION_COUNT     = 5;   // The number of subregions to look for the middle spike marker
-    public static final int   VISION_SUBREGION_DISTANCE = 10;  // The distance between each subregion
-    public static final int   VISION_CHROMA_THRESHOLD   = 150; // The minimum chroma value for one of two chroma values to be likely to have a spike marker
+    public static       Point VISION_REGION1_CENTER_ANCHOR_POINT = new Point(460,305); // The center of the area of the right spike marker in the image at the start of auto
+    public static       Point VISION_REGION2_CENTER_ANCHOR_POINT = new Point(150,290); // The center of the area of the middle spike marker in the image at the start of auto
+    public static       int   VISION_SUBREGION_WIDTH    = 20;  // The width of the area to look for a spike marker in the vision image
+    public static       int   VISION_SUBREGION_HEIGHT   = 30;  // The height of the area to look for a spike marker in the vision image
+    public static       int   VISION_REGION1_SUBREGION_COUNT     = 3;   // The number of subregions to look for the right spike marker
+    public static       int   VISION_REGION2_SUBREGION_COUNT     = 5;   // The number of subregions to look for the middle spike marker
+    public static       int   VISION_SUBREGION_DISTANCE = 15;  // The distance between each subregion
+    public static       int   VISION_CHROMA_THRESHOLD   = 155; // The minimum chroma value for one of two chroma values to be likely to have a spike marker
     public static final int   VISION_APRILTAG_CHECKS    = 3;   // The number of times that all AprilTags must be seen in a row for the robot to proceed from the long distance
     public static final double VISION_APRILTAG_TIMEOUT  = 8;   // How much time can be remaining in the auto routine before waiting for AprilTags to not be blocked at long distance times out
 

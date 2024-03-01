@@ -56,10 +56,7 @@ import org.firstinspires.ftc.teamcode.subsystems.DroneSubsystem;
  * This code works by setting up the robot and then binding its functions to commands (controller buttons).
  * This is called command-based programming. It's about breaking your code into organized parts and
  * controlling them through command signals rather than directly coding each part of the robot.
- *
  * In teleop code like this, command-based programming keeps complex code straightforward and organized.
- * It's also very impressive to the judges. Make sure to talk about it in your engineering portfolio
- * and control award submission.
  *
  * The drivetrain, arm assembly, and paper plane (drone) launcher are each managed by their own
  * "subsystem". Subsystems are smaller systems that make up parts of the overall system. The drive
@@ -75,7 +72,7 @@ import org.firstinspires.ftc.teamcode.subsystems.DroneSubsystem;
  * command-based version is much more concise and has less room for mistakes. It will help you later
  * down the line to get used to coding with subsystems and commands.
  *
- * For more information about the command system please see the official documentation:
+ * For more information about the command system, please see the official documentation:
  * https://docs.ftclib.org/ftclib/command-base/command-system
  * Most of the pages in the "Command Base" section go into great detail about all the ways to use
  * commands; you don't have to understand all of it thoroughly. I think that the most important ones
@@ -93,14 +90,14 @@ import org.firstinspires.ftc.teamcode.subsystems.DroneSubsystem;
  * Normal mode:
  * D-pad up             |   Switch to bottom intaking position/increment collection position
  * D-pad down           |   Switch to bottom intaking position/decrement collection position
- * D-pad left           |   Close left claw
- * D-pad right          |   Close right claw
- * Left stick button    |   Close both claws
+ * D-pad left           |   Open left claw just a little
+ * D-pad right          |   Open right claw just a little
+ * Left stick button    |   Toggle both claws
  * North (Y/Δ) button   |   Switch to bottom scoring position/increment place position (also sets drive to slow speed)
  * South (A/X) button   |   Switch to bottom scoring position/decrement place position (also sets drive to slow speed)
- * West (X/□) button    |   Open left claw
- * East (B/○) button    |   Open right claw
- * Right stick button   |   Open both claws
+ * West (X/□) button    |   Toggle left claw
+ * East (B/○) button    |   Toggle right claw
+ * Right stick button   |   Toggle both claws
  * Left bumper          |   Open both claws just a little
  * Right bumper         |   Move to stow position
  * Select button        |   Engage, then activate hanging from the arm
@@ -125,8 +122,9 @@ import org.firstinspires.ftc.teamcode.subsystems.DroneSubsystem;
  * Controller 2:
  * Left stick           |   Drive robot (strafe)
  * Right stick          |   Drive robot (rotate)
- * Left bumper          |   Set to slow drive speed
- * Right bumper         |   Set to fast drive speed
+ * West (X/□) button    |   Set to slow drive speed
+ * South (A/X) button   |   Set to medium drive speed
+ * East (B/○) button    |   Set to fast drive speed
  * North (Y/Δ) button   |   Zero robot heading
  * Select button        |   Launch drone
  * Start button         |   Toggle field-centric driving
@@ -134,6 +132,7 @@ import org.firstinspires.ftc.teamcode.subsystems.DroneSubsystem;
  * Tips:
  * If you don't understand what a particular method does, then hover your mouse over it to get some info and a short description.
  * Above every variable and method, it will say how many times its used. Click on that for a list of exactly where its used.
+ * ^ You can also click on a variable/method and press Ctrl+B (Cmd+B on mac) to do this faster.
  */
 
 @TeleOp(name="Gary Mecanum TeleOp Mode 3 (Toggle Claws)", group="Command OpMode")
@@ -159,9 +158,11 @@ public class MecanumTeleOpMode3b extends CommandOpMode {
          arm subsystem is in its "manual" state, that should change the control bindings, so here a
          trigger is made that will activate while this is true. Instead of asking for a boolean,
          Trigger asks for a method that returns a boolean so that it can run the method to check if
-         the value changes. */
+         the value changes. More information about how this works below. */
         Trigger manualStateTrigger = new Trigger(armSubsystem::isInManualState);
         Trigger notManualStateTrigger = manualStateTrigger.negate();
+
+        Trigger scoreStateTrigger = new Trigger(armSubsystem::isInScoreState);
 
         // Get bindable buttons
         // These buttons are used multiple times, so it's quicker
@@ -181,9 +182,11 @@ public class MecanumTeleOpMode3b extends CommandOpMode {
          Lambdas are a quick way to turn code into a Runnable. You can make code into a
          Runnable and then put it into a parameter, such as with the code below.
          There are several ways to write a lambda. The easiest way is to write this:
-         () -> {thing.code(x, y, z)}
-         ...and then let IntelliJ give you a suggestion that simplifies it for you.
-         i.e. new InstantCommand( () -> {mySystem.doSomething(x, y, z)} );
+         () -> thing.code(x, y, z)
+         In some cases, you can to this:
+         () -> { thing.code1(x, y); thing.code2(z); }
+         ...and maybe Android Studio give you a suggestion that simplifies it for you.
+         i.e. new InstantCommand( () -> mySystem.doSomething(x, y, z) );
          creates a new InstantCommand that uses the mySystem.doSomething() method with the parameters
          (x, y, z). Again, this gives it the method itself, not the outcome of running the method.
          There's also a shorter way to write a lambda:
@@ -197,71 +200,79 @@ public class MecanumTeleOpMode3b extends CommandOpMode {
         // Cycling through arm positions and states
         // To bind methods, the method is used to create a command that is bound to an action.
         armButtonY.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.SCORE, 1), armSubsystem))
-                .whenActive(new InstantCommand(driveSubsystem::setSlowSpeed, driveSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.SCORE, 1)));
         armButtonA.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.SCORE, -1), armSubsystem))
-                .whenActive(new InstantCommand(driveSubsystem::setSlowSpeed, driveSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.SCORE, -1)));
         armButtonDpadUp.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.INTAKE, 1), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.INTAKE, 1)));
         armButtonDpadDown.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.INTAKE, -1), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.INTAKE, -1)));
         armGamepad.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).and(notManualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.STOW, 0), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.STOW, 0)));
         armGamepad.getGamepadButton(GamepadKeys.Button.BACK).and(notManualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.HANG, 1), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.HANG, 1)));
+
         armGamepad.getGamepadButton(GamepadKeys.Button.START)
-                .whenActive(new InstantCommand(armSubsystem::toggleManualState, armSubsystem));
+                .whenActive(new InstantCommand(armSubsystem::toggleManualState));
+        scoreStateTrigger
+                .whileActiveContinuous(new RunCommand(armSubsystem::alignWristToBackdrop));
         // Claw controls
         armButtonDpadLeft.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(armSubsystem::toggleLeftClaw, armSubsystem));
+                .whenActive(new InstantCommand(armSubsystem::openPartlyLeftClaw));
         armButtonDpadRight.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(armSubsystem::toggleRightClaw, armSubsystem));
+                .whenActive(new InstantCommand(armSubsystem::openPartlyRightClaw));
         armButtonX.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(armSubsystem::toggleLeftClaw, armSubsystem));
+                .whenActive(new InstantCommand(armSubsystem::toggleLeftClaw));
         armButtonB.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(armSubsystem::toggleRightClaw, armSubsystem));
+                .whenActive(new InstantCommand(armSubsystem::toggleRightClaw));
 
         armGamepad.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).and(notManualStateTrigger)
-                .whenActive(new InstantCommand(armSubsystem::openPartlyLeftClaw, armSubsystem))
-                .whenActive(new InstantCommand(armSubsystem::openPartlyRightClaw, armSubsystem));
+                .whenActive(new InstantCommand(armSubsystem::openPartlyLeftClaw))
+                .whenActive(new InstantCommand(armSubsystem::openPartlyRightClaw));
         armGamepad.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
-                .whenPressed(new InstantCommand(armSubsystem::toggleLeftClaw, armSubsystem))
-                .whenPressed(new InstantCommand(armSubsystem::toggleRightClaw, armSubsystem));
+                .whenPressed(new InstantCommand(armSubsystem::toggleBothClaws));
         armGamepad.getGamepadButton(GamepadKeys.Button.RIGHT_STICK_BUTTON)
-                .whenPressed(new InstantCommand(armSubsystem::toggleLeftClaw, armSubsystem))
-                .whenPressed(new InstantCommand(armSubsystem::toggleRightClaw, armSubsystem));
+                .whenPressed(new InstantCommand(armSubsystem::toggleBothClaws));
         // Manual mode controls
         armGamepad.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).and(manualStateTrigger)
-                .whenActive(new InstantCommand(armSubsystem::zeroExtensionMotor, armSubsystem));
+                .whenActive(new InstantCommand(armSubsystem::zeroExtensionMotor));
         armGamepad.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).and(manualStateTrigger)
-                .whenActive(new InstantCommand(armSubsystem::zeroRotationMotor, armSubsystem));
+                .whenActive(new InstantCommand(armSubsystem::zeroRotationMotor));
 
         armButtonY.and(manualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(Constants.MANUAL_ROTATION_COARSE_POWER), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(Constants.MANUAL_ROTATION_COARSE_POWER)));
         armButtonA.and(manualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(-Constants.MANUAL_ROTATION_COARSE_POWER), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(-Constants.MANUAL_ROTATION_COARSE_POWER)));
         armButtonX.and(manualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(Constants.MANUAL_ROTATION_FINE_POWER), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(Constants.MANUAL_ROTATION_FINE_POWER)));
         armButtonB.and(manualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(-Constants.MANUAL_ROTATION_FINE_POWER), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(-Constants.MANUAL_ROTATION_FINE_POWER)));
         armButtonA.or(armButtonB).or(armButtonX).or(armButtonY).negate().and(manualStateTrigger)
                 .whenActive(new InstantCommand(() -> armSubsystem.setRotationMotorPower(0)));
 
         armButtonDpadUp.and(manualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(Constants.MANUAL_EXTENSION_COARSE_POWER), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(Constants.MANUAL_EXTENSION_COARSE_POWER)));
         armButtonDpadDown.and(manualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(-Constants.MANUAL_EXTENSION_COARSE_POWER), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(-Constants.MANUAL_EXTENSION_COARSE_POWER)));
         armButtonDpadLeft.and(manualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(Constants.MANUAL_EXTENSION_FINE_POWER), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(Constants.MANUAL_EXTENSION_FINE_POWER)));
         armButtonDpadRight.and(manualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(-Constants.MANUAL_EXTENSION_FINE_POWER), armSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(-Constants.MANUAL_EXTENSION_FINE_POWER)));
         armButtonDpadUp.or(armButtonDpadDown).or(armButtonDpadLeft).or(armButtonDpadRight).negate().and(manualStateTrigger)
                 .whenActive(new InstantCommand(() -> armSubsystem.setExtensionMotorPower(0)));
+
+        notManualStateTrigger
+                .whenActive(new InstantCommand(() -> armGamepad.gamepad.setLedColor(0, 0, 1, 120000)))
+                .whenActive(new InstantCommand(() -> armGamepad.gamepad.rumbleBlips(1)))
+                .whenInactive(new InstantCommand(() -> armGamepad.gamepad.setLedColor(0, 1, 0, 120000)))
+                .whenInactive(new InstantCommand(() -> armGamepad.gamepad.rumbleBlips(1)));
+
         // Base driver controls
-        baseGamepad.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+        baseGamepad.getGamepadButton(GamepadKeys.Button.X)
                 .whenPressed(new InstantCommand(driveSubsystem::setSlowSpeed));
-        baseGamepad.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
+        baseGamepad.getGamepadButton(GamepadKeys.Button.A)
+                .whenPressed(new InstantCommand(driveSubsystem::setMediumSpeed));
+        baseGamepad.getGamepadButton(GamepadKeys.Button.B)
                 .whenPressed(new InstantCommand(driveSubsystem::setFullSpeed));
         baseGamepad.getGamepadButton(GamepadKeys.Button.START)
                 .whenPressed(new InstantCommand(driveSubsystem::toggleIsFieldCentric));
@@ -270,12 +281,16 @@ public class MecanumTeleOpMode3b extends CommandOpMode {
         baseGamepad.getGamepadButton(GamepadKeys.Button.Y)
                 .whenPressed(new InstantCommand(driveSubsystem::zeroHeading));
 
-        // Set the drive command to default
+        // Set the default commands
         /* The default command is repeatedly run while no other commands are sent to the subsystem,
-        so this will check the controller and run the drivetrain constantly. */
+        so this will check the controller and run these things constantly.
+        Since none of the commands above have been associated with a subsystem (except the drone),
+        these will always run constantly. */
         driveSubsystem.setDefaultCommand(new RunCommand(() -> driveSubsystem.drive(baseGamepad.getLeftY(), baseGamepad.getLeftX(), baseGamepad.getRightX()), driveSubsystem));
+        armSubsystem.setDefaultCommand(new RunCommand(() -> armSubsystem.setExtensionServoPower(armGamepad.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) - armGamepad.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER)), armSubsystem));
 
         // Update telemetry every loop
         //schedule(new RunCommand(telemetry::update));
+        // there's no telemetry in this opmode lolololol
     }
 }

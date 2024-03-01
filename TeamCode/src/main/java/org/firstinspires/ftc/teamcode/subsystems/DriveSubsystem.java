@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.QuadMotorValues;
 /*
  * This is a data class for a set of driving motors. It records four motors
  * and can apply a set of power values to all four motors at once.
+ * It also has some other features to control them like a drivetrain.
  */
 public class DriveSubsystem extends SubsystemBase {
 
@@ -87,7 +88,7 @@ public class DriveSubsystem extends SubsystemBase {
 
         QuadMotorValues<Double> drivePower;
         if (isFieldCentric) {
-            drivePower = Calculations.mecanumDriveisFieldCentric(axial, lateral, yaw, heading);
+            drivePower = Calculations.mecanumDriveFieldCentric(axial, lateral, yaw, heading);
         } else {
             drivePower = Calculations.mecanumDriveRobotCentric(axial, lateral, yaw);
         }
@@ -96,6 +97,10 @@ public class DriveSubsystem extends SubsystemBase {
 
     public void setFullSpeed() {
         powerMultiplier = Constants.DRIVE_POWER_MULTIPLIER;
+    }
+
+    public void setMediumSpeed() {
+        powerMultiplier = Constants.DRIVE_POWER_MULTIPLIER_MED;
     }
 
     public void setSlowSpeed() {

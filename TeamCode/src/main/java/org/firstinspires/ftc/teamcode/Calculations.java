@@ -31,7 +31,7 @@ public class Calculations {
         return new QuadMotorValues<>(leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
     }
 
-    public static QuadMotorValues<Double> mecanumDriveisFieldCentric(double axial, double lateral, double yaw, double heading) {
+    public static QuadMotorValues<Double> mecanumDriveFieldCentric(double axial, double lateral, double yaw, double heading) {
         // Rotate the movement direction counter to the robot's rotation
         double rotLateral = lateral * Math.cos(-heading) - axial * Math.sin(-heading);
         double rotAxial = lateral * Math.sin(-heading) + axial * Math.cos(-heading);
@@ -58,18 +58,16 @@ public class Calculations {
     // Joystick to arm target angle calculations
     public static int vectorToArmPositionHalf(float vx, float vy) {
         // Have you taken pre-calc yet?
-
-        // Old math:
-        //armInputTarget = Math.min(Math.max((int) (Math.atan2(Math.abs(gamepad1.right_stick_x), gamepad1.right_stick_y) / Math.PI * 3400), 0), 3400);
-
-        // Turn the vector into an angle
+        // Turn the vector into an angle (spans 180 degrees, D: [0, 1], bearing south)
         double angle = Math.atan2(Math.abs(vx), vy) / Math.PI;
+        // Limit angle to allowed range
+        angle = Math.min(angle, Constants.ROTATION_POSITION_MAX);
         // Scale the angle to the arm's encoder
         angle *= Constants.ROTATION_TICKS_180_DEGREES;
         // Get an offset to account for motor's zero position
         angle -= Constants.ROTATION_TICKS_180_DEGREES - Constants.ROTATION_TICKS_NORTH;
-        // Cast angle to int and clamp within allowed range
-        return Math.min(Math.max((int) angle, 0), Constants.ROTATION_POSITION_MAX);
+        // Cast angle to int and make sure the result is acceptable (x >= 0)
+        return Math.max((int) angle, 0);
     }
 
     public static int vectorToArmPositionFull(float vx, float vy) {
@@ -143,4 +141,10 @@ public class Calculations {
         return encoder + (1 - Constants.WRIST_POSITION_UP);
     }
 
+    // The position for the wrist to go to for pointing at the target angle, accounting for arm rotation
+    public static double alignArmWristToAngle(double targetScaled, double rotationScaled) {
+        return Math.max(0, Math.min(1,
+                scaleToEncoderArmWrist(targetScaled - (rotationScaled - 0.5))
+        ));
+    }
 }

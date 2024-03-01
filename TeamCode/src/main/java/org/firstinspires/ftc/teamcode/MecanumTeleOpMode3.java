@@ -36,6 +36,7 @@ import com.arcrobotics.ftclib.command.button.Button;
 import com.arcrobotics.ftclib.command.button.Trigger;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -58,10 +59,7 @@ import org.firstinspires.ftc.teamcode.subsystems.DroneSubsystem;
  * This code works by setting up the robot and then binding its functions to commands (controller buttons).
  * This is called command-based programming. It's about breaking your code into organized parts and
  * controlling them through command signals rather than directly coding each part of the robot.
- *
  * In teleop code like this, command-based programming keeps complex code straightforward and organized.
- * It's also very impressive to the judges. Make sure to talk about it in your engineering portfolio
- * and control award submission.
  *
  * The drivetrain, arm assembly, and paper plane (drone) launcher are each managed by their own
  * "subsystem". Subsystems are smaller systems that make up parts of the overall system. The drive
@@ -77,7 +75,7 @@ import org.firstinspires.ftc.teamcode.subsystems.DroneSubsystem;
  * command-based version is much more concise and has less room for mistakes. It will help you later
  * down the line to get used to coding with subsystems and commands.
  *
- * For more information about the command system please see the official documentation:
+ * For more information about the command system, please see the official documentation:
  * https://docs.ftclib.org/ftclib/command-base/command-system
  * Most of the pages in the "Command Base" section go into great detail about all the ways to use
  * commands; you don't have to understand all of it thoroughly. I think that the most important ones
@@ -136,8 +134,10 @@ import org.firstinspires.ftc.teamcode.subsystems.DroneSubsystem;
  * Tips:
  * If you don't understand what a particular method does, then hover your mouse over it to get some info and a short description.
  * Above every variable and method, it will say how many times its used. Click on that for a list of exactly where its used.
+ * ^ You can also click on a variable/method and press Ctrl+B (Cmd+B on mac) to do this faster.
  */
 
+@Disabled
 @TeleOp(name="Gary Mecanum TeleOp Mode 3 (Original)", group="Command OpMode")
 public class MecanumTeleOpMode3 extends CommandOpMode {
     @Override
@@ -199,11 +199,9 @@ public class MecanumTeleOpMode3 extends CommandOpMode {
         // Cycling through arm positions and states
         // To bind methods, the method is used to create a command that is bound to an action.
         armButtonY.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.SCORE, 1)))
-                .whenActive(new InstantCommand(driveSubsystem::setSlowSpeed, driveSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.SCORE, 1)));
         armButtonA.and(notManualStateTrigger)
-                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.SCORE, -1)))
-                .whenActive(new InstantCommand(driveSubsystem::setSlowSpeed, driveSubsystem));
+                .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.SCORE, -1)));
         armButtonDpadUp.and(notManualStateTrigger)
                 .whenActive(new InstantCommand(() -> armSubsystem.cycleSetPositionInState(ArmSubsystem.ArmState.INTAKE, 1)));
         armButtonDpadDown.and(notManualStateTrigger)

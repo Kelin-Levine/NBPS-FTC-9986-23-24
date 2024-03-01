@@ -33,6 +33,16 @@ public class LiveSelector extends MecanumAutoMode3b {
     public void runOpMode() {
         // This code contains lambdas. There is an explanation of lambdas in MecanumTeleOpMode3.
 
+        // Defaults in case the routine starts early:
+        isBlueSide = false;
+        isLongDistance = false;
+        isDoingAlternateRoute = Constants.AUTO_USE_ALTERNATE_ROUTES;
+        parkSide = Constants.AUTO_PARK_SIDE;
+        isWaitingForEnd = false;
+        isMovingInPark = false;
+        selectedRoutine = Routine.NORMAL;
+        //
+
         telemetry.addData("Auto setup", "(part 1/7)");
         telemetry.addData("Is the robot on the blue alliance?", "");
         telemetry.addData("A/cross", "Yes");
@@ -180,6 +190,10 @@ public class LiveSelector extends MecanumAutoMode3b {
             sleepWhileTrue(() -> !isStopRequested());
         }
 
+        if (isStopRequested()) return;
+
+        telemetry.setAutoClear(false);
+        if (isStarted()) telemetry.addData("STARTING EARLY WITH SOME/ALL DEFAULTS! GOOD LUCK!", "");
         telemetry.addData("Auto setup complete!", "");
         telemetry.addData("On the blue alliance", isBlueSide);
         telemetry.addData("At the farside position", isLongDistance);
@@ -195,7 +209,7 @@ public class LiveSelector extends MecanumAutoMode3b {
         /* The keyword 'super' contains all methods in the superclass and explicitly refers to them
          as they are written in the superclass, bypassing any overrides in this class.
          super.runOpMode() runs the runOpMode() in MecanumAutoMode3b, not the one in this class.
-         Otherwise, this code would repeat forever and never move on to the main portion. */
+         That way, this code can continue on with the main routine after this setup. */
         super.runOpMode();
     }
 
@@ -208,7 +222,7 @@ public class LiveSelector extends MecanumAutoMode3b {
      In short, sleepWhileTrue() doesn't take true or false, it takes a condition and runs it to find
      out if it's still true or false every time it needs to check. */
     private void sleepWhileTrue(BooleanSupplier condition) {
-        while (condition.getAsBoolean()) {
+        while (condition.getAsBoolean() && !isStopRequested() && !isStarted()) {
             sleep(50);
         }
     }

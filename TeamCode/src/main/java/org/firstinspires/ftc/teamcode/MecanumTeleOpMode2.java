@@ -358,7 +358,7 @@ public class MecanumTeleOpMode2 extends LinearOpMode {
 
             QuadMotorValues<Double> drivePower;
             if (isFieldCentric) {
-                drivePower = Calculations.mecanumDriveisFieldCentric(axial, lateral, yaw, heading);
+                drivePower = Calculations.mecanumDriveFieldCentric(axial, lateral, yaw, heading);
             } else {
                 drivePower = Calculations.mecanumDriveRobotCentric(axial, lateral, yaw);
             }

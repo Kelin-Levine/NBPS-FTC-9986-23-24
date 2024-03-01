@@ -351,22 +351,20 @@ public class MecanumTeleOpTesting extends LinearOpMode {
             }
 
             // Run motors
-            int armInputTarget;
-            QuadMotorValues drivePower;
             if (controlMode == 3) {
                 // Control sticks control arm
                 double rightStickMagnitude = Math.hypot(gamepad1.right_stick_x, gamepad1.right_stick_y);
                 double leftStickMagnitude = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
                 if (rightStickMagnitude > Constants.ARM_CONTROL_STICK_THRESHOLD) {
-                    armInputTarget = Calculations.vectorToArmPositionHalf(gamepad1.right_stick_x, gamepad1.right_stick_y);
+                    int armInputTarget = Calculations.vectorToArmPositionHalf(gamepad1.right_stick_x, gamepad1.right_stick_y);
                     armLiftMotor.setTargetPosition(armInputTarget);
                 } else if (leftStickMagnitude > Constants.ARM_CONTROL_STICK_THRESHOLD) {
-                    armInputTarget = Calculations.vectorToArmPositionFull(gamepad1.left_stick_x, gamepad1.left_stick_y);
+                    int armInputTarget = Calculations.vectorToArmPositionFull(gamepad1.left_stick_x, gamepad1.left_stick_y);
                     armLiftMotor.setTargetPosition(armInputTarget);
                 }
             } else if (controlMode < 3) {
                 // Control sticks control drive
-                drivePower = Calculations.mecanumDriveRobotCentric(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+                QuadMotorValues<Double> drivePower = Calculations.mecanumDriveRobotCentric(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
                 motors.setPower(drivePower);
             }
 

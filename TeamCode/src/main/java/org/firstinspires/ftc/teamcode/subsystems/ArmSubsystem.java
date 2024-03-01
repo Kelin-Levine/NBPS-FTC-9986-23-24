@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.arcrobotics.ftclib.command.SubsystemBase;
-import com.arcrobotics.ftclib.hardware.motors.CRServo;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.CRServo;
 
 import org.firstinspires.ftc.teamcode.ArmPosition;
 import org.firstinspires.ftc.teamcode.Calculations;
@@ -20,12 +21,10 @@ import org.firstinspires.ftc.teamcode.Constants;
  *
  * Note: Continuous rotation servos don't support set positions. If one is used, then the extension
  * will not move automatically.
- * There is a method for set position in FTCLib's version of CRServo (used here), but it doesn't
- * actually do anything. It's a remnant from FTCLib Motor class, which CRServo is based on.
  */
 public class ArmSubsystem extends SubsystemBase {
 
-    // Enums to label the different position modes that the arm can be in
+    // Enums to label the different states that the arm can be in and their corresponding positions
     public enum ArmState {
         STOW {
             final ArmPosition[] positions = {
@@ -39,7 +38,7 @@ public class ArmSubsystem extends SubsystemBase {
         INTAKE {
             final ArmPosition[] positions = {
                     new ArmPosition(0.18, 0, 0.72),
-                    new ArmPosition(0.231, 0, 0.72),
+                    new ArmPosition(0.3, 0, 0.72),
             };
 
             @Override
@@ -48,9 +47,13 @@ public class ArmSubsystem extends SubsystemBase {
 
         SCORE {
             final ArmPosition[] positions = {
-                new ArmPosition(0.5, 0, 0.8),
-                new ArmPosition(0.534, 0, 0.79),
-                new ArmPosition(0.6, 0, 0.78),
+                new ArmPosition(0.4, 0, 0.90),
+                new ArmPosition(0.5, 0, 0.85),
+                    new ArmPosition(0.55, 0, 0.80),
+                new ArmPosition(0.6, 0, 0.76),
+                    new ArmPosition(0.65, 0, 0.74),
+                new ArmPosition(0.7, 0, 0.72),
+                new ArmPosition(0.8, 0, 0.68),
             };
 
             @Override
@@ -77,7 +80,7 @@ public class ArmSubsystem extends SubsystemBase {
 
 
     // Hardware variables
-    private final Motor rotationMotor;
+    private final DcMotor rotationMotor;
     private final Motor extensionMotor;
     private final CRServo extensionServo;
     private final Servo wristServo;
@@ -91,18 +94,17 @@ public class ArmSubsystem extends SubsystemBase {
 
     // Constructor method
     public ArmSubsystem(HardwareMap hardwareMap) {
-        this.rotationMotor = new Motor(hardwareMap, "arm_rotation_motor");
+        this.rotationMotor = hardwareMap.get(DcMotor.class, "arm_rotation_motor");
         this.extensionMotor = new Motor(hardwareMap, "arm_extension_motor");
-        this.extensionServo = new CRServo(hardwareMap, "arm_extension_servo");
+        this.extensionServo = hardwareMap.get(CRServo.class, "arm_extension_servo");
         this.wristServo = hardwareMap.get(Servo.class, "arm_wrist_servo");
         this.leftClawServo = hardwareMap.get(Servo.class, "left_claw_servo");
         this.rightClawServo = hardwareMap.get(Servo.class, "right_claw_servo");
 
-        this.rotationMotor.setInverted(false);
-        this.rotationMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
-        this.rotationMotor.setRunMode(Motor.RunMode.PositionControl);
-        this.rotationMotor.set(Constants.ARM_ROTATION_POWER);
-        this.rotationMotor.resetEncoder();
+
+        this.rotationMotor.setDirection((DcMotor.Direction.FORWARD));
+        this.rotationMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        zeroRunToPositionMotor(rotationMotor, Constants.ARM_ROTATION_POWER);
 
         this.extensionMotor.setInverted(false);
         this.extensionMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
@@ -110,7 +112,8 @@ public class ArmSubsystem extends SubsystemBase {
         this.extensionMotor.set(Constants.ARM_EXTENSION_POWER);
         this.extensionMotor.resetEncoder();
 
-        this.extensionServo.setInverted(false);
+        this.extensionServo.setDirection(CRServo.Direction.REVERSE);
+        this.extensionServo.setPower(0);
 
         this.wristServo.setDirection(Servo.Direction.REVERSE);
 
@@ -126,13 +129,17 @@ public class ArmSubsystem extends SubsystemBase {
             currentPositionInState = 0;
         }
         currentPositionInState = Math.max(Math.min(currentPositionInState + increment, state.getPositions().length-1), 0);
-        applyPosition(state.getPositions()[currentPositionInState]);
+        applyPosition(state.getPositions()[currentPositionInState], true, true, !isInScoreState());
     }
 
     public void applyPosition(ArmPosition position) {
-        applyRotationPosition(position.getRotationAngle());
-        applyExtensionPosition(position.getExtensionPosition());
-        applyWristPosition(position.getWristAngle());
+        applyPosition(position, true, true, true);
+    }
+
+    public void applyPosition(ArmPosition position, boolean doRotation, boolean doExtension, boolean doWrist) {
+        if (doRotation) applyRotationPosition(position.getRotationAngle());
+        if (doExtension) applyExtensionPosition(position.getExtensionPosition());
+        if (doWrist) applyWristPosition(position.getWristAngle());
     }
 
     public void applyRotationPosition(double scaled) {
@@ -153,8 +160,16 @@ public class ArmSubsystem extends SubsystemBase {
         wristServo.setPosition(Calculations.scaleToEncoderArmWrist(scaled));
     }
 
+    public void alignWristToBackdrop() {
+        alignWristToAngle(5.0 / 6.0);
+    }
+
+    public void alignWristToAngle(double scaled) {
+        wristServo.setPosition(Calculations.alignArmWristToAngle(scaled, Calculations.encoderToScaleArmRotation(rotationMotor.getCurrentPosition())));
+    }
+
     public void setRotationMotorPower(double power) {
-        rotationMotor.set(power);
+        rotationMotor.setPower(power);
     }
 
     public void setExtensionMotorPower(double power) {
@@ -162,7 +177,7 @@ public class ArmSubsystem extends SubsystemBase {
     }
 
     public void setExtensionServoPower(double power) {
-        extensionServo.set(power);
+        extensionServo.setPower(power);
     }
 
     public void openLeftClaw() {
@@ -193,19 +208,38 @@ public class ArmSubsystem extends SubsystemBase {
         /* Servos don't actually tell their position to the Control Hub. getPosition() is always
          equivalent to the last value of setPosition(), so this is an acceptable way to tell if the
          claw is open or closed. This wouldn't work with real encoders since no motor is 100% accurate. */
-        leftClawServo.setPosition(leftClawServo.getPosition() == Constants.LEFT_CLAW_CLOSED ? Constants.LEFT_CLAW_OPEN : Constants.LEFT_CLAW_CLOSED);
+        if (leftClawServo.getPosition() == Constants.LEFT_CLAW_CLOSED) {
+            openLeftClaw();
+        } else {
+            closeLeftClaw();
+        }
     }
 
     public void toggleRightClaw() {
-        rightClawServo.setPosition(rightClawServo.getPosition() == Constants.RIGHT_CLAW_CLOSED ? Constants.RIGHT_CLAW_OPEN : Constants.RIGHT_CLAW_CLOSED);
+        if (rightClawServo.getPosition() == Constants.RIGHT_CLAW_CLOSED) {
+            openRightClaw();
+        } else {
+            closeRightClaw();
+        }
+    }
+
+    // Open both claws if both claws are already closed, otherwise close both.
+    public void toggleBothClaws() {
+        if (leftClawServo.getPosition() == Constants.LEFT_CLAW_CLOSED && rightClawServo.getPosition() == Constants.RIGHT_CLAW_CLOSED) {
+            openLeftClaw();
+            openRightClaw();
+        } else {
+            closeLeftClaw();
+            closeRightClaw();
+        }
     }
 
     public void enableManualState() {
         currentState = ArmState.MANUAL;
         currentPositionInState = 0;
 
-        rotationMotor.set(0);
-        rotationMotor.setRunMode(Motor.RunMode.RawPower);
+        rotationMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rotationMotor.setPower(0);
 
         extensionMotor.set(0);
         extensionMotor.setRunMode(Motor.RunMode.RawPower);
@@ -215,9 +249,9 @@ public class ArmSubsystem extends SubsystemBase {
         currentState = ArmState.UNKNOWN;
         currentPositionInState = 0;
 
-        rotationMotor.setTargetPosition(rotationMotor.getCurrentPosition());
-        rotationMotor.setRunMode(Motor.RunMode.PositionControl);
-        rotationMotor.set(Constants.ARM_ROTATION_POWER);
+        rotationMotor.setPower(Constants.ARM_ROTATION_POWER);
+        rotationMotor.setTargetPosition(0);
+        rotationMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
         extensionMotor.setTargetPosition(extensionMotor.getCurrentPosition());
         extensionMotor.setRunMode(Motor.RunMode.PositionControl);
@@ -236,16 +270,39 @@ public class ArmSubsystem extends SubsystemBase {
         return currentState == ArmState.MANUAL;
     }
 
+    public boolean isInScoreState() {
+        return currentState == ArmState.SCORE;
+    }
+
     public void zeroRotationMotor() {
-        rotationMotor.resetEncoder();
+        if (isInManualState()) {
+            zeroRunUsingEncoderMotor(rotationMotor);
+        } else {
+            zeroRunToPositionMotor(rotationMotor, Constants.ARM_ROTATION_POWER);
+        }
     }
 
     public void zeroExtensionMotor() {
         extensionMotor.resetEncoder();
     }
 
+    private void zeroRunToPositionMotor(DcMotor motor, double power) {
+        // reset, then power, then position, then mode
+        motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motor.setPower(power);
+        motor.setTargetPosition(0);
+        motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
+    private void zeroRunUsingEncoderMotor(DcMotor motor) {
+        // reset, then power, then position, then mode
+        motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motor.setPower(0);
+        motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
     // Getter methods
-    public Motor getRotationMotor() {
+    public DcMotor getRotationMotor() {
         return rotationMotor;
     }
 

@@ -24,10 +24,16 @@ public class VisionPipelineAutoMode2Spike extends OpenCvPipeline
     private Mat YCrCb = new Mat();
     private Mat chroma = new Mat();
     private Mat outputMat;
-    private volatile int avg1, avg2/*, avg3*/;
+    private /*volatile*/ int avg1, avg2/*, avg3*/;
 
     // Returning values
-    // These are volatile because they may be accessed by another thread while this pipeline is running
+    /* Note the 'volatile' variables. Because this pipeline runs asynchronously to the main code,
+     Java needs to know that variables coming out of the pipeline aren't being processed at the same
+     time as everything else, so it can't assume that it isn't always changing. 'volatile' doesn't
+     affect the logic of code in any way, it just tells Java to play it safe while running the code
+     so that it doesn't miss any sudden changes.
+     To tell the truth, these variables probably don't need to be volatile, but bugs related to
+     missing volatile keywords are very unpredictable so I'm too scared to remove them. */
     private volatile SidePosition spikePosition;
 
     // Points
@@ -191,11 +197,10 @@ public class VisionPipelineAutoMode2Spike extends OpenCvPipeline
             }
 
             /*
-             * Compute the highest average pixel value of each group of
-             * subregions. We're taking the average of a single channel
-             * buffer, so the value we need is at index 0. We could have
-             * also taken the average pixel value of the 3-channel image,
-             * and referenced the value at index 2 here.
+             * Compute the highest average pixel value of each subregion and take the highest
+             * average to be the proposed average for the region. The proposed average for each
+             * region will then be compared. Assuming that both aren't below the threshold for
+             * detection, the higher average will be accepted as the region containing the Team Prop.
              */
             avg1 = 0;
             for (Mat subregion : region1_chroma) avg1 = Math.max(avg1, (int) Core.mean(subregion).val[0]);
@@ -319,16 +324,19 @@ public class VisionPipelineAutoMode2Spike extends OpenCvPipeline
     // This method fills a submat array with centered and evenly spaced out submats for subregions.
     private void populateSubregionSubmatArray(Mat[] submatArray, Point centerAnchorPoint) {
         Point region_topleft_point = new Point(
-                centerAnchorPoint.x - ((submatArray.length * Constants.VISION_SUBREGION_WIDTH) + ((submatArray.length - 1) * Constants.VISION_SUBREGION_DISTANCE)) / 2.0,
+                centerAnchorPoint.x - ((submatArray.length * Constants.VISION_SUBREGION_WIDTH)
+                        + ((submatArray.length - 1) * Constants.VISION_SUBREGION_DISTANCE)) / 2.0,
                 centerAnchorPoint.y - Constants.VISION_SUBREGION_HEIGHT / 2.0);
 
         for (int i = 0; i < submatArray.length; i++) {
             Point topleft_point =  new Point(
-                    region_topleft_point.x + (Constants.VISION_SUBREGION_WIDTH + Constants.VISION_SUBREGION_DISTANCE) * i,
+                    region_topleft_point.x
+                            + (Constants.VISION_SUBREGION_WIDTH + Constants.VISION_SUBREGION_DISTANCE) * i,
                     region_topleft_point.y);
 
             Point bottomright_point =  new Point(
-                    region_topleft_point.x + Constants.VISION_SUBREGION_WIDTH + (Constants.VISION_SUBREGION_WIDTH + Constants.VISION_SUBREGION_DISTANCE) * i,
+                    region_topleft_point.x + Constants.VISION_SUBREGION_WIDTH
+                            + (Constants.VISION_SUBREGION_WIDTH + Constants.VISION_SUBREGION_DISTANCE) * i,
                     region_topleft_point.y + Constants.VISION_SUBREGION_HEIGHT);
 
             submatArray[i] = chroma.submat(new Rect(topleft_point, bottomright_point));
@@ -355,7 +363,7 @@ public class VisionPipelineAutoMode2Spike extends OpenCvPipeline
                     topleft_point, // First point which defines the rectangle
                     bottomright_point, // Second point which defines the rectangle
                     color, // The color the rectangle is drawn in
-                    Constants.VISION_BOX_THICKNESS); // Thickness of the rectangle lines*/
+                    Constants.VISION_BOX_THICKNESS); // Thickness of the rectangle lines
         }
     }
 
